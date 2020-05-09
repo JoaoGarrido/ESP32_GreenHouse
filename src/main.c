@@ -5,22 +5,34 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "nvs_flash.h"
+#include "mqtt_client.h"
+#include "esp_system.h"
+#include "nvs_flash.h"
+#include "esp_event.h"
 
 //Cores
 #define WIFI_COMMUNICATIONS_CORE 0
 #define APPLICATION_CORE 1
 
 //SSID config
-#define EXAMPLE_WIFI_SSID "WIFI_SSID"
-#define EXAMPLE_WIFI_PASS "WIFI_PW"
+#define WIFI_SSID "ExampleSSDI"
+#define WIFI_PASS "ExamplePW"
 static EventGroupHandle_t wifi_event_group;
 const int CONNECTED_BIT = BIT0;
+
+//MQTT config
+#define BROKER_URL "mqtts://mqtt.eclipse.org"
+#define BROKER_PORT 8883
+//extern const uint8_t mqtt_eclipse_org_pem_start[]   asm("_binary_mqtt_eclipse_org_pem_start");
+//extern const uint8_t mqtt_eclipse_org_pem_end[]   asm("_binary_mqtt_eclipse_org_pem_end");
 
 //Logging
 #define wifi_tag "Wifi"
 #define mqtt_tag "MQTT"
 #define dht22_tag "DHT22"
 #define task_logging "Task_logging"
+#define startup_tag "Startup"
+#define memory_tag "Memory"
 
 #define TASK_STACK_MIN_SIZE 8000
 
@@ -28,17 +40,20 @@ const int CONNECTED_BIT = BIT0;
 void initialize_nvs();
 void initialize_ports();
 void initialize_wifi_sta_mode();
+static void initialize_mqtt_app();
 void read_DHT22(void *args);
 void update_motor_status(void *args);
 void control_greenhouse(void *args);
 void write_display(void *args);
 void logging(void *args);
 static esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
+static void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event);
 void wifi_send_data_to_broker(void *args);
 
 //Init functions
 void initialize_nvs(){
-    // Initialize NVS.
+    // Initialize Non volatile storage -> needs to be initialized because of the wifi
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -61,8 +76,8 @@ void initialize_wifi_sta_mode(){
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = EXAMPLE_WIFI_SSID,
-            .password = EXAMPLE_WIFI_PASS,
+            .ssid = WIFI_SSID,
+            .password = WIFI_PASS,
         },
     };
     ESP_LOGI(wifi_tag,"Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
@@ -71,13 +86,26 @@ void initialize_wifi_sta_mode(){
     ESP_ERROR_CHECK( esp_wifi_start() );
 }
 
+static void initialize_mqtt_app(){
+    const esp_mqtt_client_config_t mqtt_cfg = {
+        .uri = BROKER_URL,
+        .port = BROKER_PORT,
+        //.cert_pem = (const char *)mqtt_eclipse_org_pem_start,
+        .task_prio = 4,
+    };
+    ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
+    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
+    esp_mqtt_client_start(client);
+}
+
 //Loop task functions
 void read_DHT22(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "read_DHT22");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }  
-}
+}   
 
 void update_motor_status(void *args){
     for(;;){
@@ -129,6 +157,67 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event){
     return ESP_OK;
 }
 
+static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
+    esp_mqtt_client_handle_t client = event->client;
+    int msg_id;
+    switch (event->event_id) {
+        case MQTT_EVENT_CONNECTED:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_CONNECTED");
+            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/dht22", 1);
+            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/temperature_opening_limit", 1);
+            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
+
+            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/temperature_closing_limit", 1);
+            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_DISCONNECTED");
+            break;  
+
+        case MQTT_EVENT_SUBSCRIBED:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+            msg_id = esp_mqtt_client_publish(client, "/esp32_greenhouse/temperature_opening_limit", "data", 0, 0, 0);
+            ESP_LOGI(mqtt_tag, "sent publish successful, msg_id=%d", msg_id);
+            break;
+        case MQTT_EVENT_UNSUBSCRIBED:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+            break;
+        case MQTT_EVENT_PUBLISHED:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            break;
+        case MQTT_EVENT_DATA:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_DATA");
+            printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+            printf("DATA=%.*s\r\n", event->data_len, event->data);
+            if (strncmp(event->data, "send binary please", event->data_len) == 0) {
+                ESP_LOGI(mqtt_tag, "Sending the binary");
+            }
+            break;
+        case MQTT_EVENT_ERROR:
+            ESP_LOGI(mqtt_tag, "MQTT_EVENT_ERROR");
+            if (event->error_handle->error_type == MQTT_ERROR_TYPE_ESP_TLS) {
+                ESP_LOGI(mqtt_tag, "Last error code reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
+                ESP_LOGI(mqtt_tag, "Last tls stack error number: 0x%x", event->error_handle->esp_tls_stack_err);
+            } else if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
+                ESP_LOGI(mqtt_tag, "Connection refused error: 0x%x", event->error_handle->connect_return_code);
+            } else {
+                ESP_LOGW(mqtt_tag, "Unknown error type: 0x%x", event->error_handle->error_type);
+            }
+            break;
+        default:
+            ESP_LOGI(mqtt_tag, "Other event id:%d", event->event_id);
+            break;
+    }
+    return ESP_OK;
+}
+
+static void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
+    ESP_LOGD(mqtt_tag, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
+    mqtt_event_handler_callback(event_data);
+}
+
 void wifi_send_data_to_broker(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "wifi_send_data_to_broker");
@@ -137,10 +226,15 @@ void wifi_send_data_to_broker(void *args){
 }
 
 void app_main(){
-    //init wifi
+    //Startup info
+    ESP_LOGI(startup_tag, "[APP] Startup..");
+    ESP_LOGI(startup_tag, "[APP] IDF version: %s", esp_get_idf_version());
+    ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
+    //init
     initialize_nvs();
     initialize_wifi_sta_mode();
     initialize_ports();
+    //initialize_mqtt_app();
 
     //Application Tasks  
     xTaskCreatePinnedToCore(read_DHT22, "read_DHT22", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
@@ -150,5 +244,4 @@ void app_main(){
     xTaskCreatePinnedToCore(logging, "logging", TASK_STACK_MIN_SIZE, NULL, 1, NULL, APPLICATION_CORE);
     //Wifi Tasks
     xTaskCreatePinnedToCore(wifi_send_data_to_broker, "wifi_send_data_to_broker", TASK_STACK_MIN_SIZE, NULL, 4, NULL, WIFI_COMMUNICATIONS_CORE);
-    
 }
