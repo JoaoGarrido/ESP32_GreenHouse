@@ -22,7 +22,7 @@ const int CONNECTED_BIT = BIT0;
 
 
 //MQTT config
-#define BROKER_URL "mqtt://mqtt.eclipse.org"
+#define BROKER_URL "mqtt://test.mosquitto.org"
 #define BROKER_PORT 1883
 
 //Logging
