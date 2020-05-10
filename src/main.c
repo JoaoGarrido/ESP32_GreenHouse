@@ -9,7 +9,6 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-#include "cert.h"
 
 //Cores
 #define WIFI_COMMUNICATIONS_CORE 0
@@ -23,9 +22,8 @@ const int CONNECTED_BIT = BIT0;
 
 
 //MQTT config
-#define BROKER_URL "mqtts://mqtt.eclipse.org"
-#define BROKER_PORT 8883
-static const uint8_t mqtt_eclipse_org_pem_start[]  = PEM_CERT;
+#define BROKER_URL "mqtt://mqtt.eclipse.org"
+#define BROKER_PORT 1883
 
 //Logging
 #define wifi_tag "Wifi"
@@ -91,8 +89,6 @@ static void initialize_mqtt_app(){
     const esp_mqtt_client_config_t mqtt_cfg = {
         .uri = BROKER_URL,
         .port = BROKER_PORT,
-        .cert_pem = (const char *)mqtt_eclipse_org_pem_start,
-        .task_prio = 4,
     };
     ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
