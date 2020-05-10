@@ -25,7 +25,7 @@ const int CONNECTED_BIT = BIT0;
 //MQTT config
 #define BROKER_URL "mqtts://mqtt.eclipse.org"
 #define BROKER_PORT 8883
-static const uint8_t mqtt_eclipse_org_pem_start[]  = "-----BEGIN CERTIFICATE-----\n" PEM_CERT "\n-----END CERTIFICATE-----";
+static const uint8_t mqtt_eclipse_org_pem_start[]  = PEM_CERT;
 
 //Logging
 #define wifi_tag "Wifi"
