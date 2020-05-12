@@ -32,10 +32,8 @@ static EventGroupHandle_t wifi_event_group;
 const int CONNECTED_BIT = BIT0;
 
 //MQTT config
-#define BROKER_URL "mqtts://mqtt.eclipse.org"
-#define BROKER_PORT 8883
-//extern const uint8_t mqtt_eclipse_org_pem_start[]   asm("_binary_mqtt_eclipse_org_pem_start");
-//extern const uint8_t mqtt_eclipse_org_pem_end[]   asm("_binary_mqtt_eclipse_org_pem_end");
+#define BROKER_URL "mqtt://test.mosquitto.org"
+#define BROKER_PORT 1883
 
 //Logging
 #define startup_tag "[Startup]"
@@ -145,7 +143,6 @@ static void initialize_mqtt_app(){
     const esp_mqtt_client_config_t mqtt_cfg = {
         .uri = BROKER_URL,
         .port = BROKER_PORT,
-        //.cert_pem = (const char *)mqtt_eclipse_org_pem_start,
         .task_prio = 4,
     };
     ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
@@ -359,7 +356,7 @@ void app_main(){
     initialize_nvs();
     initialize_wifi_sta_mode();
     initialize_ports();
-    //initialize_mqtt_app();
+    initialize_mqtt_app();
 
     //Application Tasks  
     xTaskCreatePinnedToCore(read_DHT22, "read_DHT22", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
