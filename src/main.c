@@ -5,7 +5,6 @@
 #include "esp_log.h"
 #include "nvs.h"
 #include "nvs_flash.h"
-<<<<<<< HEAD
 #include "mqtt_client.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
@@ -16,26 +15,19 @@
 #include "driver/dac.h"
 #include "esp_system.h"
 #include "esp_adc_cal.h"
-=======
 #include "esp_task_wdt.h"
 #include "dht.h"
 //#include "dht11.h"
 //#include "driver/gpio.h"
 //#include "sdkconfig.h"
->>>>>>> Eman_branch
 
 //Cores
 #define WIFI_COMMUNICATIONS_CORE 0
 #define APPLICATION_CORE 1
 
 //SSID config
-<<<<<<< HEAD
 #define WIFI_SSID ""
 #define WIFI_PASS ""
-=======
-#define EXAMPLE_WIFI_SSID "TheMarley"
-#define EXAMPLE_WIFI_PASS "7EC2A4F115"
->>>>>>> Eman_branch
 static EventGroupHandle_t wifi_event_group;
 const int CONNECTED_BIT = BIT0;
 
@@ -46,15 +38,9 @@ const int CONNECTED_BIT = BIT0;
 //extern const uint8_t mqtt_eclipse_org_pem_end[]   asm("_binary_mqtt_eclipse_org_pem_end");
 
 //Logging
-<<<<<<< HEAD
-#define wifi_tag "Wifi"
-#define mqtt_tag "MQTT"
-#define dht22_tag "DHT22"
-#define task_logging "Task_logging"
-#define startup_tag "Startup"
-#define memory_tag "Memory"
-#define ldr_tag "LDR"
-=======
+#define startup_tag "[Startup]"
+#define memory_tag "[Memory]"
+#define ldr_tag "[LDR]"
 #define wifi_tag "[Wifi]"
 #define mqtt_tag "[MQTT]"
 #define dht22_tag "[DHT22]"
@@ -83,7 +69,6 @@ static const dht_sensor_type_t sensor_type = DHT_TYPE_DHT11;
 //#else
 static const gpio_num_t dht_gpio = 4;
 //#endif
->>>>>>> Eman_branch
 
 
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
@@ -126,7 +111,6 @@ void initialize_nvs(){
 }
 
 void initialize_ports(){
-<<<<<<< HEAD
     check_efuse();
      //Configure ADC
     if (unit == ADC_UNIT_1) {
@@ -135,9 +119,6 @@ void initialize_ports(){
     } else {
         adc2_config_channel_atten((adc2_channel_t)channel, atten);
     }
-=======
-   //DHT11_init(GPIO_NUM_4);
->>>>>>> Eman_branch
 }
 
 void initialize_wifi_sta_mode(){
@@ -382,7 +363,6 @@ void app_main(){
 
     //Application Tasks  
     xTaskCreatePinnedToCore(read_DHT22, "read_DHT22", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
-<<<<<<< HEAD
     xTaskCreatePinnedToCore(update_motor_status, "update_motor_status", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 3, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(write_display, "write_display", TASK_STACK_MIN_SIZE, NULL, 2, NULL, APPLICATION_CORE);
