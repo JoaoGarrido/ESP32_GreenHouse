@@ -183,8 +183,6 @@ void read_DHT22(void *args){
     CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
 
     for(;;){
-        
-          //Comment this line to trigger a TWDT timeout
         float humidity = 0.0;
         float  temperature = 0.0;
         if (dht_read_float_data(sensor_type, dht_gpio, &humidity, &temperature) == ESP_OK){
@@ -192,10 +190,6 @@ void read_DHT22(void *args){
             ESP_LOGI(task_logging,"Task running: %s", "read_DHT22");
             ESP_LOGI(dht22_tag,"Temperature: %fºC || Humidity %f%%", temperature, humidity);
         }
-        //humidity = DHT11_read().humidity;
-        //temperature = DHT11_read().temperature;
-        
-
         vTaskDelay(2000 / portTICK_RATE_MS);
     }  
 }   
@@ -307,8 +301,6 @@ static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
 }
 
 void read_ldr(void *args) {
-    
-
     //Characterize ADC
     adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
     esp_adc_cal_value_t val_type = esp_adc_cal_characterize(unit, atten, width, DEFAULT_VREF, adc_chars);
