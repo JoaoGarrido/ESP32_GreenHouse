@@ -4,6 +4,7 @@
 //System libraries
 #include "mqtt_client.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs.h"

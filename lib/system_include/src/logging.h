@@ -11,10 +11,12 @@
 #define ldr_tag "[LDR]"
 #define wifi_tag "[Wifi]"
 #define mqtt_tag "[MQTT]"
-#define dht22_tag "[DHT22]"
+#define dht_tag "[DHT]"
 #define task_logging "[Task_logging]"
 #define watchdog "[Watchdog]"
-
+#define buttons_tag "[User Input]"
+#define motor_tag "[Motor Output]"
+#define display_tag "[Display]"
 
 //Watchdog timers and macro
 #define TWDT_TIMEOUT_S          3

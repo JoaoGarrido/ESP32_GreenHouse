@@ -20,9 +20,9 @@ static EventGroupHandle_t wifi_event_group;
 static esp_mqtt_client_handle_t client_g;
 //Global data
 extern sensor_data_t sensor_data;
-extern SemaphoreHandle_t DHT_Signal;
-extern SemaphoreHandle_t LDR_Signal;
-extern SemaphoreHandle_t Window_state_Signal;
+extern SemaphoreHandle_t publish_DHT_Signal;
+extern SemaphoreHandle_t publish_LDR_Signal;
+extern SemaphoreHandle_t publish_WindowState_Signal;
 
 //Functions
 //Static functions
@@ -150,8 +150,8 @@ void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, in
 void publish_dht_handler(void *args){
     char buff[21] = "";
     for(;;){
-        xSemaphoreTake(DHT_Signal, portMAX_DELAY);
-        ESP_LOGI(task_logging,"Task running: %s", "publish_dht_handler");
+        xSemaphoreTake(publish_DHT_Signal, portMAX_DELAY);
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_dht_handler");
         sprintf(buff, "%f", sensor_data.temperature);
         esp_mqtt_client_publish(client_g, temp_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", sensor_data.humidity);
@@ -162,8 +162,8 @@ void publish_dht_handler(void *args){
 void publish_ldr_handler(void *args){
     char buff[21] = "";
     for(;;){
-        xSemaphoreTake(LDR_Signal, portMAX_DELAY);
-        ESP_LOGI(task_logging,"Task running: %s", "publish_ldr_handler");
+        xSemaphoreTake(publish_LDR_Signal, portMAX_DELAY);
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_ldr_handler");
         sprintf(buff, "%d", sensor_data.luminosity);
         esp_mqtt_client_publish(client_g, lumi_topic, buff, 0, 0, 0);
     }
@@ -172,8 +172,8 @@ void publish_ldr_handler(void *args){
 void publish_window_state_handler(void *args){
     char buff[21] = "";
     for(;;){
-        xSemaphoreTake(Window_state_Signal, portMAX_DELAY);
-        ESP_LOGI(task_logging,"Task running: %s", "publish_window_state_handler");
+        xSemaphoreTake(publish_WindowState_Signal, portMAX_DELAY);
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_state_handler");
         sprintf(buff, "%u", sensor_data.window_state);
         esp_mqtt_client_publish(client_g, window_state_topic, buff, 0, 0, 0);
     }

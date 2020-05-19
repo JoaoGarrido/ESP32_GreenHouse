@@ -2,6 +2,9 @@
 
 /**Global variables**/
 extern sensor_data_t sensor_data;
+extern SemaphoreHandle_t read_DHT_Signal;
+extern SemaphoreHandle_t read_LDR_Signal;
+extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 /**Static variables**/
 //ADC variables
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
@@ -56,18 +59,19 @@ void initialize_ports(){
     }
 }
 
-void read_DHT22(void *args){
+void read_DHT(void *args){
     //Subscribe this task to TWDT, then check if it is subscribed
     CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
     CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
 
     for(;;){
+        xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
+        ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
         if (dht_read_float_data(sensor_type, dht_gpio, &(sensor_data.humidity), &(sensor_data.temperature)) == ESP_OK){
             CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
-            ESP_LOGI(task_logging,"Task running: %s", "read_DHT22");
-            ESP_LOGI(dht22_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
+            ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
         }
-        vTaskDelay(2000 / portTICK_RATE_MS);
+        xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
 }   
 
@@ -78,6 +82,8 @@ void read_ldr(void *args) {
     print_char_val_type(val_type);
     //Continuously sample ADC1
     for(;;){
+        xSemaphoreTake(read_LDR_Signal, portMAX_DELAY);
+        ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
         uint32_t adc_reading = 0;
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++) {
@@ -94,20 +100,27 @@ void read_ldr(void *args) {
         uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
         ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
         ESP_LOGI(ldr_tag, "ADC%d CH%d Raw: %d\t\n", unit, channel, adc_reading);
-        vTaskDelay(1000 / portTICK_RATE_MS);
+        xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
 
-void update_motor_status(void *args){
+void read_buttons(void *args){
     for(;;){
-        ESP_LOGI(task_logging,"Task running: %s", "update_motor_status");
+        ESP_LOGI(buttons_tag,"Task running: %s", "read_buttons");
+        vTaskDelay(1000 / portTICK_RATE_MS);
+    }  
+}
+
+void write_motor_state(void *args){
+    for(;;){
+        ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }  
 }
 
 void write_display(void *args){
     for(;;){
-       ESP_LOGI(task_logging,"Task running: %s", "write_display");
+        ESP_LOGI(display_tag,"Task running: %s", "write_display");
         vTaskDelay(1000 / portTICK_RATE_MS);
     }  
 }
