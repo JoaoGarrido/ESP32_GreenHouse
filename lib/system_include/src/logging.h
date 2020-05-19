@@ -1,10 +1,9 @@
-#ifndef TAGS
-#define TAGS
+#ifndef LOGGING
+#define LOGGING
 
-//OS
-#define WIFI_COMMUNICATIONS_CORE 0
-#define APPLICATION_CORE 1
-#define TASK_STACK_MIN_SIZE 10000
+//System libraries
+#include "esp_log.h"
+#include "esp_task_wdt.h"
 
 //Logging
 #define startup_tag "[Startup]"
@@ -27,4 +26,4 @@
             }                                                          \
 })
 
-#endif /* TAGS */
+#endif /* LOGGING */

@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+//OS
+#define WIFI_COMMUNICATIONS_CORE 0
+#define APPLICATION_CORE 1
+#define TASK_STACK_MIN_SIZE 10000
+
 typedef struct {
     float humidity;
     float temperature;

@@ -1,12 +1,15 @@
 #ifndef COMMUNICATIONS
 #define COMMUNICATIONS
 
-#include "freertos/FreeRTOSConfig.h"
+//System libraries
 #include "mqtt_client.h"
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_log.h"
-#include "tags.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+//Project libraries
+#include "logging.h"
 #include "greenhouse_system.h"
 
 #define WIFI_SSID ""

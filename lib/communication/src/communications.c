@@ -77,8 +77,19 @@ static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
     return ESP_OK;
 }
 
+static void initialize_nvs(){
+    // Initialize Non volatile storage -> needs to be initialized because of the wifi
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK( err );
+}
+
 //Global functions
 void initialize_wifi_sta_mode(){
+    initialize_nvs();
     tcpip_adapter_init();
     wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL) );
