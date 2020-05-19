@@ -1,6 +1,6 @@
+#ifndef DHT
+#define DHT
 
-#ifndef __DHT_H__
-#define __DHT_H__
 
 #include <driver/gpio.h>
 #include <esp_err.h>
@@ -53,4 +53,4 @@ esp_err_t dht_read_float_data(dht_sensor_type_t sensor_type, gpio_num_t pin,
 
 /**@}*/
 
-#endif  // __DHT_H__
+#endif /* DHT */

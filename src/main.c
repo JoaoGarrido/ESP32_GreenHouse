@@ -1,15 +1,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_wifi.h"
-#include "esp_log.h"
+#include "freertos/queue.h"
 #include "nvs.h"
 #include "nvs_flash.h"
-#include "mqtt_client.h"
+#include "esp_log.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include "esp_event.h"
-#include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
 #include "driver/dac.h"
@@ -17,49 +13,14 @@
 #include "esp_adc_cal.h"
 #include "esp_task_wdt.h"
 #include "dht.h"
-//#include "dht11.h"
-//#include "driver/gpio.h"
-//#include "sdkconfig.h"
 
-//Cores
-#define WIFI_COMMUNICATIONS_CORE 0
-#define APPLICATION_CORE 1
-
-//SSID config
-#define WIFI_SSID ""
-#define WIFI_PASS ""
-static EventGroupHandle_t wifi_event_group;
-const int CONNECTED_BIT = BIT0;
-
-//MQTT config
-#define BROKER_URL "mqtt://test.mosquitto.org"
-#define BROKER_PORT 1883
-
-//Logging
-#define startup_tag "[Startup]"
-#define memory_tag "[Memory]"
-#define ldr_tag "[LDR]"
-#define wifi_tag "[Wifi]"
-#define mqtt_tag "[MQTT]"
-#define dht22_tag "[DHT22]"
-#define task_logging "[Task_logging]"
-#define watchdog "[Watchdog]"
-
-#define TASK_STACK_MIN_SIZE 10000
-
-//Watchdog timers and macro
-#define TWDT_TIMEOUT_S          3
-#define TASK_RESET_PERIOD_S     2
+//
+#include "tags.h"
+#include "communications.h"
+#include "greenhouse_system.h"
 
 
-#define CHECK_ERROR_CODE(returned, expected) ({                        \
-            if(returned != expected){                                  \
-                ESP_LOGI(watchdog,"Watchdog timer ERROR");             \
-                abort();                                               \
-            }                                                          \
-})
-
-
+sensor_data_t sensor_data = {0.0, 0.0, 0, 0};
 //DHT
 static const dht_sensor_type_t sensor_type = DHT_TYPE_DHT11;
 //#if defined(CONFIG_IDF_TARGET_ESP8266)
@@ -68,34 +29,30 @@ static const dht_sensor_type_t sensor_type = DHT_TYPE_DHT11;
 static const gpio_num_t dht_gpio = 4;
 //#endif
 
-
+//ADC variables
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   64          //Multisampling
-
-
 static esp_adc_cal_characteristics_t *adc_chars;
 static const adc_channel_t channel = ADC_CHANNEL_6;     //GPIO34 if ADC1, GPIO14 if ADC2
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
-
 static const adc_atten_t atten = ADC_ATTEN_DB_0;
 static const adc_unit_t unit = ADC_UNIT_1;
 
 //Header
 void initialize_nvs();
 void initialize_ports();
-void initialize_wifi_sta_mode();
-static void initialize_mqtt_app();
 void read_DHT22(void *args);
 void update_motor_status(void *args);
 void control_greenhouse(void *args);
 void write_display(void *args);
 void logging(void *args);
-static esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
-static void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
-static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event);
-void wifi_send_data_to_broker(void *args);
 static void check_efuse(void);
 static void print_char_val_type(esp_adc_cal_value_t val_type);
+
+//Semaphores
+SemaphoreHandle_t DHT_Signal = NULL;
+SemaphoreHandle_t LDR_Signal = NULL;
+SemaphoreHandle_t Window_state_Signal = NULL;
 
 //Init functions
 void initialize_nvs(){
@@ -119,36 +76,10 @@ void initialize_ports(){
     }
 }
 
-void initialize_wifi_sta_mode(){
-    tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
-    ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL) );
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    cfg.wifi_task_core_id = WIFI_COMMUNICATIONS_CORE;
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
-        },
-    };
-    //ESP_LOGI(wifi_tag,"Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK( esp_wifi_start() );
-}
-
-static void initialize_mqtt_app(){
-    const esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = BROKER_URL,
-        .port = BROKER_PORT,
-        .task_prio = 4,
-    };
-    ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
-    esp_mqtt_client_start(client);
+void init_sync_variables(){
+    DHT_Signal = xSemaphoreCreateBinary();
+    LDR_Signal = xSemaphoreCreateBinary();
+    Window_state_Signal = xSemaphoreCreateBinary();
 }
 
 static void check_efuse(void){
@@ -166,6 +97,7 @@ static void check_efuse(void){
         ESP_LOGI(ldr_tag, "eFuse Vref: NOT supported\n");
     }
 }
+
 static void print_char_val_type(esp_adc_cal_value_t val_type){
     if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
         ESP_LOGI(ldr_tag, "Characterized using Two Point Value\n");
@@ -183,12 +115,10 @@ void read_DHT22(void *args){
     CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
 
     for(;;){
-        float humidity = 0.0;
-        float  temperature = 0.0;
-        if (dht_read_float_data(sensor_type, dht_gpio, &humidity, &temperature) == ESP_OK){
+        if (dht_read_float_data(sensor_type, dht_gpio, &(sensor_data.humidity), &(sensor_data.temperature)) == ESP_OK){
             CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(task_logging,"Task running: %s", "read_DHT22");
-            ESP_LOGI(dht22_tag,"Temperature: %fºC || Humidity %f%%", temperature, humidity);
+            ESP_LOGI(dht22_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
         }
         vTaskDelay(2000 / portTICK_RATE_MS);
     }  
@@ -204,6 +134,7 @@ void update_motor_status(void *args){
 void control_greenhouse(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
+        
         vTaskDelay(1000 / portTICK_RATE_MS);
     }  
 }
@@ -222,91 +153,13 @@ void logging(void *args){
     }  
 }
 
-//WiFi Communications functions
-static esp_err_t wifi_event_handler(void *ctx, system_event_t *event){
-    //ESP_LOGI(wifi_tag,"Task running: %s", "wifi_event_handler");
-    switch(event->event_id) {
-    case SYSTEM_EVENT_STA_START:
-        esp_wifi_connect();
-        break;
-    case SYSTEM_EVENT_STA_GOT_IP:
-        xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        /* This is a workaround as ESP32 WiFi libs don't currently
-           auto-reassociate. */
-        esp_wifi_connect();
-        xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
-        break;
-    default:
-        break;
-    }
-    return ESP_OK;
-}
-
-static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
-    esp_mqtt_client_handle_t client = event->client;
-    int msg_id;
-    switch (event->event_id) {
-        case MQTT_EVENT_CONNECTED:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_CONNECTED");
-            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/dht22", 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/temperature_opening_limit", 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client, "/esp32_greenhouse/temperature_closing_limit", 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
-            break;
-        case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_DISCONNECTED");
-            break;  
-
-        case MQTT_EVENT_SUBSCRIBED:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-            msg_id = esp_mqtt_client_publish(client, "/esp32_greenhouse/temperature_opening_limit", "data", 0, 0, 0);
-            ESP_LOGI(mqtt_tag, "sent publish successful, msg_id=%d", msg_id);
-            break;
-        case MQTT_EVENT_UNSUBSCRIBED:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
-            break;
-        case MQTT_EVENT_PUBLISHED:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-            break;
-        case MQTT_EVENT_DATA:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_DATA");
-            printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-            printf("DATA=%.*s\r\n", event->data_len, event->data);
-            if (strncmp(event->data, "send binary please", event->data_len) == 0) {
-                ESP_LOGI(mqtt_tag, "Sending the binary");
-            }
-            break;
-        case MQTT_EVENT_ERROR:
-            ESP_LOGI(mqtt_tag, "MQTT_EVENT_ERROR");
-            if (event->error_handle->error_type == MQTT_ERROR_TYPE_ESP_TLS) {
-                ESP_LOGI(mqtt_tag, "Last error code reported from esp-tls: 0x%x", event->error_handle->esp_tls_last_esp_err);
-                ESP_LOGI(mqtt_tag, "Last tls stack error number: 0x%x", event->error_handle->esp_tls_stack_err);
-            } else if (event->error_handle->error_type == MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
-                ESP_LOGI(mqtt_tag, "Connection refused error: 0x%x", event->error_handle->connect_return_code);
-            } else {
-                ESP_LOGW(mqtt_tag, "Unknown error type: 0x%x", event->error_handle->error_type);
-            }
-            break;
-        default:
-            ESP_LOGI(mqtt_tag, "Other event id:%d", event->event_id);
-            break;
-    }
-    return ESP_OK;
-}
-
 void read_ldr(void *args) {
     //Characterize ADC
     adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
     esp_adc_cal_value_t val_type = esp_adc_cal_characterize(unit, atten, width, DEFAULT_VREF, adc_chars);
     print_char_val_type(val_type);
     //Continuously sample ADC1
-    while (1) {
+    for(;;){
         uint32_t adc_reading = 0;
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++) {
@@ -327,17 +180,6 @@ void read_ldr(void *args) {
     }
 }
 
-static void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
-    ESP_LOGD(mqtt_tag, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
-    mqtt_event_handler_callback(event_data);
-}
-
-void wifi_send_data_to_broker(void *args){
-    for(;;){
-       // ESP_LOGI(task_logging,"Task running: %s", "wifi_send_data_to_broker");
-        vTaskDelay(1000 / portTICK_RATE_MS);
-    }    
-}
 
 void app_main(){
     //Startup info
@@ -349,6 +191,7 @@ void app_main(){
     initialize_wifi_sta_mode();
     initialize_ports();
     initialize_mqtt_app();
+    init_sync_variables();
 
     //Application Tasks  
     xTaskCreatePinnedToCore(read_DHT22, "read_DHT22", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
@@ -358,6 +201,9 @@ void app_main(){
     xTaskCreatePinnedToCore(logging, "logging", TASK_STACK_MIN_SIZE, NULL, 1, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
 
-    //Wifi Tasks
-    xTaskCreatePinnedToCore(wifi_send_data_to_broker, "wifi_send_data_to_broker", TASK_STACK_MIN_SIZE, NULL, 4, NULL, WIFI_COMMUNICATIONS_CORE);
+    //MQTT Tasks
+    xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 2, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_ldr_handler, "publish_ldr_handler", TASK_STACK_MIN_SIZE, NULL, 2, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_window_state_handler, "publish_window_state_handler", TASK_STACK_MIN_SIZE, NULL, 2, NULL, WIFI_COMMUNICATIONS_CORE);
+
 }
