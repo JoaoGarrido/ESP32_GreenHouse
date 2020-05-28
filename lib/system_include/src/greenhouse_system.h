@@ -8,17 +8,25 @@
 #define APPLICATION_CORE 1
 #define TASK_STACK_MIN_SIZE 10000
 
+//Timer
+#define TIMER_DIVIDER         16  //  Hardware timer clock divider
+#define TIMER_SCALE           (TIMER_BASE_CLK / (TIMER_DIVIDER*100))  // convert counter value to seconds
+
+typedef enum _Buttons{NONE, BTN_OPEN, BTN_STOP, BTN_SELECT, BTN_UP, BTN_DOWN} Buttons;
+
+typedef enum _Window_state{OPEN, CLOSED} Window_state;
 typedef struct {
     float humidity;
     float temperature;
     uint32_t luminosity;
-    uint8_t window_state;
+    Window_state window_state;
 } sensor_data_t;
 
+typedef enum _Window_action{OPEN, CLOSE} Window_action;
 typedef struct {
     float temperature_max;
     float temperature_min;
-    uint8_t window_action;
+    Window_action window_action;
 } control_data_t;
 
 #endif /* GREENHOUSE_SYSTEM */

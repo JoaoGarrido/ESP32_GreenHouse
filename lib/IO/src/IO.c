@@ -2,10 +2,25 @@
 
 /**Global variables**/
 extern sensor_data_t sensor_data;
+extern control_data_t control_data;
 extern SemaphoreHandle_t read_DHT_Signal;
 extern SemaphoreHandle_t read_LDR_Signal;
 extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 /**Static variables**/
+//Display variables
+typedef enum _Menu_state{Menu_state_Data_menu, Menu_state_Main_menu, Menu_state_Max_temperature_menu, Menu_state_Min_temperature_menu, Menu_state_Config_menu} Menu_state;
+typedef enum _Main_menu_select{Main_menu_select_Data_menu, Main_menu_select_Max_temperature_menu, Main_menu_select_Min_temperature_menu, Main_menu_select_Config_menu} Main_menu_select;
+typedef enum _Config_menu_select{SOMETHING} Config_menu_select;
+typedef struct{
+    //Current menu
+    Menu_state menu_state;
+    Main_menu_select main_menu_select;
+    const uint8_t main_menu_size;
+    Config_menu_select config_menu_select;
+    float temperature;
+} display_data_t;
+static display_data_t display_data = {Menu_state_Data_menu, Main_menu_select_Data_menu, 8, SOMETHING};
+static Buttons button_pressed = NONE;
 //ADC variables
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   64          //Multisampling
@@ -49,14 +64,25 @@ static void print_char_val_type(esp_adc_cal_value_t val_type){
 }
 
 void initialize_ports(){
+    //Checks
     check_efuse();
-     //Configure ADC
+    //Configure ADC
     if (unit == ADC_UNIT_1) {
         adc1_config_width(width);
         adc1_config_channel_atten(channel, atten);
     } else {
         adc2_config_channel_atten((adc2_channel_t)channel, atten);
     }
+    //Configure GPIO
+    const uint64_t GPIO_BUTTON_PIN_MASK = 0; //REPLACE
+    gpio_config_t button_conf{
+        pin_bit_mask = GPIO_BUTTON_PIN_MASK;
+        intr_type = GPIO_PIN_INTR_DISABLE;
+        mode = GPIO_MODE_INPUT;
+        pull_down_en = 0;
+        pull_up_en = 1;
+    };
+    gpio_config(&button_conf);
 }
 
 void read_DHT(void *args){
@@ -104,10 +130,127 @@ void read_ldr(void *args) {
     }
 }
 
+void IRAM_ATTR timer_button_isr(void *args){
+    uint32_t button_pressed;
+    xTaskNotifyFromISR(read_buttons, button_pressed, eSetValueWithOverwrite, NULL);
+    //portYIELD_FROM_ISR();
+}
+
+static void main_menu(){
+    switch (button_pressed){
+        case BTN_SELECT:
+            switch(display_data.main_menu_select){
+                case Main_menu_select_Data_menu:
+                    display_data.menu_state = Menu_state_Data_menu;
+                    break;
+                case Main_menu_select_Max_temperature_menu:
+                    display_data.menu_state = Menu_state_Max_temperature_menu;
+                    display_data.temperature = control_data.temperature_max;
+                    break;
+                case Main_menu_select_Min_temperature_menu:
+                    display_data.menu_state = Menu_state_Min_temperature_menu;
+                    display_data.temperature = control_data.temperature_min;
+                    break;
+                case Main_menu_select_Config_menu:
+                    display_data.menu_state = Menu_state_Config_menu;
+                    break;
+            }
+            break;
+        case BTN_UP:
+            display_data.main_menu_select = (display_data.main_menu_size+display_data.main_menu_size+1)%display_data.main_menu_size;
+            break;
+        case BTN_DOWN:
+            display_data.main_menu_select = (display_data.main_menu_size+display_data.main_menu_size-1)%display_data.main_menu_size;
+            break;
+        default:
+            break;
+    }
+}
+
+static void max_temperature_menu(){
+    switch (button_pressed){
+        case BTN_SELECT:
+            display_data.menu_state = Menu_state_Main_menu;
+            if(display_data.temperature < control_data.temperature_min){
+                display_data.temperature = control_data.temperature_min + 1.0;
+            }
+            control_data.temperature_max = display_data.temperature;
+            break;
+        case BTN_UP:
+            if(display_data.temperature <= 98.0){
+                display_data.temperature += 1.0;
+            }
+            break;
+        case BTN_DOWN:
+            if(display_data.temperature >= 1.0){
+                display_data.temperature -= 1.0;
+            }            
+            break;
+        default:
+            break;
+    }
+}
+
+static void min_temperature_menu(){
+    switch (button_pressed){
+        case BTN_SELECT:
+            display_data.menu_state = Menu_state_Main_menu;
+            if(display_data.temperature > control_data.temperature_max){
+                display_data.temperature = control_data.temperature_max - 1.0;
+            }
+            control_data.temperature_min = display_data.temperature;
+            break;
+        case BTN_UP:
+            if(display_data.temperature <= 98.0){
+                display_data.temperature += 1.0;
+            }
+            break;
+        case BTN_DOWN:
+            if(display_data.temperature >= 1.0){
+                display_data.temperature -= 0.0;
+            }            
+            break;
+        default:
+            break;
+    }
+}
+
 void read_buttons(void *args){
+    uint32_t notification_value = 0;
     for(;;){
+        xTaskNotifyWait(0x00, 0xffffffff, &notification_value, portMAX_DELAY);
         ESP_LOGI(buttons_tag,"Task running: %s", "read_buttons");
-        vTaskDelay(1000 / portTICK_RATE_MS);
+        button_pressed = notification_value;
+        switch(button_pressed){
+            //Emergency Actions
+            case BTN_OPEN:
+                control_data.window_action = OPEN;
+                break;
+            case BTN_STOP:
+                control_data.window_action = CLOSE;
+                break;
+            default:
+                //Move from data menu to main menu after any button is pressed
+                if(display_data.menu_state == Menu_state_Data_menu){
+                    display_data.menu_state = Menu_state_Main_menu;
+                    break;
+                }
+                switch(display_data.menu_state){
+                    case Menu_state_Main_menu:
+                        main_menu();
+                        break;
+                    case Menu_state_Max_temperature_menu:
+                        max_temperature_menu();
+                        break;
+                    case Menu_state_Min_temperature_menu:
+                        min_temperature_menu();
+                        break;
+                    case Menu_state_Config_menu:
+                        config_menu();
+                        break;
+                }
+                break;
+        }
     }  
 }
 
@@ -122,5 +265,5 @@ void write_display(void *args){
     for(;;){
         ESP_LOGI(display_tag,"Task running: %s", "write_display");
         vTaskDelay(1000 / portTICK_RATE_MS);
-    }  
+    }
 }

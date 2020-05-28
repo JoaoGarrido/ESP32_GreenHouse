@@ -156,6 +156,7 @@ void publish_dht_handler(void *args){
         esp_mqtt_client_publish(client_g, temp_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", sensor_data.humidity);
         esp_mqtt_client_publish(client_g, humid_topic, buff, 0, 0, 0);
+        xSemaphoreGive(publish_DHT_Signal);
     }
 }
 
@@ -166,6 +167,7 @@ void publish_ldr_handler(void *args){
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_ldr_handler");
         sprintf(buff, "%d", sensor_data.luminosity);
         esp_mqtt_client_publish(client_g, lumi_topic, buff, 0, 0, 0);
+        xSemaphoreGive(publish_LDR_Signal);
     }
 }
 
@@ -176,5 +178,6 @@ void publish_window_state_handler(void *args){
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_state_handler");
         sprintf(buff, "%u", sensor_data.window_state);
         esp_mqtt_client_publish(client_g, window_state_topic, buff, 0, 0, 0);
+        xSemaphoreGive(publish_WindowState_Signal);
     }
 }
