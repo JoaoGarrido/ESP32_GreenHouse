@@ -12,15 +12,15 @@
 
 //Header
 static void init_sync_variables();
-static void init_timers();
-void IRAM_ATTR timer_button_isr();
+static void init_button_timer(double timer_interval_msec);
+extern void IRAM_ATTR timer_button_isr();
 static void control_greenhouse(void *args);
 void app_main();
 
 /**Global variables**/
 //Data
-sensor_data_t sensor_data = {0.0, 0.0, 0, CLOSED};
-control_data_t control_data = {0.0, 0.0, OPEN};
+sensor_data_t sensor_data = {0.0, 0.0, 0, Window_state_Closed};
+control_data_t control_data = {0.0, 0.0, Window_action_Close};
 //Semaphores
 SemaphoreHandle_t publish_DHT_Signal = NULL;
 SemaphoreHandle_t publish_LDR_Signal = NULL;
@@ -30,6 +30,7 @@ SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
 //Task Handler
 TaskHandle_t th_read_buttons;
+TaskHandle_t th_write_motor_state;
 
 //Init functions
 static void init_sync_variables(){
@@ -65,23 +66,26 @@ static void init_button_timer(double timer_interval_msec){
 
 //Loop task functions
 static void control_greenhouse(void *args){
-    uint8_t motor_state;
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
         //Trigger read tasks
         xSemaphoreGive(read_DHT_Signal);
         xSemaphoreGive(read_LDR_Signal);
-        //Wait for reads to finish 
+        //Wait for read to finish 
         for(int i = 0; i < 2; i++){
             xSemaphoreTake(x_Sem_C_Greenhouse, portMAX_DELAY);
         }
-        xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue for counting semaphore
+        xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
         if(sensor_data.temperature > control_data.temperature_max){
-            control_data.window_action = OPEN;
+            control_data.window_action = Window_action_Open;
         }
         else if(sensor_data.temperature < control_data.temperature_min){
-            control_data.window_action = CLOSE;
+            control_data.window_action = Window_action_Close;
+        }
+        //Write Motor State
+        if((int)control_data.window_action != (int)sensor_data.window_state){
+            xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
         }
         //Trigger publish tasks on WiFi Core
         xSemaphoreGive(publish_DHT_Signal);
@@ -106,9 +110,9 @@ void app_main(){
     init_button_timer(30);
 
     //Application Tasks  
-    xTaskCreatePinnedToCore(write_motor_state, "update_motor_status", TASK_STACK_MIN_SIZE, NULL, 11, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 10, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(read_buttons, "read_buttons", TASK_STACK_MIN_SIZE, NULL, 6, &th_read_buttons, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(read_buttons, "read_buttons", TASK_STACK_MIN_SIZE, NULL, 10, &th_read_buttons, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(write_display, "write_display", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
