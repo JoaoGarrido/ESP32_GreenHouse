@@ -7,20 +7,8 @@ extern SemaphoreHandle_t read_DHT_Signal;
 extern SemaphoreHandle_t read_LDR_Signal;
 extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 /**Static variables**/
-//Display variables
-typedef enum _Menu_state{Menu_state_Data_menu, Menu_state_Main_menu, Menu_state_Max_temperature_menu, Menu_state_Min_temperature_menu, Menu_state_Config_menu} Menu_state;
-typedef enum _Main_menu_select{Main_menu_select_Data_menu, Main_menu_select_Max_temperature_menu, Main_menu_select_Min_temperature_menu, Main_menu_select_Config_menu} Main_menu_select;
-typedef enum _Config_menu_select{SOMETHING} Config_menu_select;
-typedef struct{
-    //Current menu
-    Menu_state menu_state;
-    Main_menu_select main_menu_select;
-    const uint8_t main_menu_size;
-    Config_menu_select config_menu_select;
-    float temperature;
-} display_data_t;
-static display_data_t display_data = {Menu_state_Data_menu, Main_menu_select_Data_menu, 8, SOMETHING, 30.0};
-static Buttons button_pressed = NONE;
+//Button variables
+#define N_BUTTONS 4
 enum Buttons_GPIO{GPIO_BTN_UP=35, GPIO_BTN_DOWN=34, GPIO_BTN_SEL=33, GPIO_BTN_BACK=32};
 //ADC variables
 #define DEFAULT_VREF    1100
@@ -144,155 +132,35 @@ void read_ldr(void *args) {
 }
 
 //Buttons
+
+uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
+    static uint16_t button_state[N_BUTTONS] = {0,0,0,0};
+    volatile uint8_t button_read = 0;
+    button_read = gpio_get_level(button_gpio);
+    button_state[button_name] = ( (button_state[button_name] << 1) | button_read | 0xE000);
+
+    if(button_state[button_name] == 0xF000){
+        return 1;
+    }
+    return 0;
+}
+
 void IRAM_ATTR timer_button_isr(void *args){
-    uint32_t button_pressed = 0;
-    /*switch(){
-        case BTN_UP:
-        case BTN_DOWN:
-        case BTN_SELECT:
-        case BTN_BACK:
-    }*/
-    xTaskNotifyFromISR(read_buttons, button_pressed, eSetValueWithOverwrite, NULL);
+    //Probably queues better than task notify because if 2 buttons are active at the same time it's possible to miss some buttons
+    if(button_debounce(BTN_UP, GPIO_BTN_UP)){
+        xTaskNotifyFromISR(read_buttons, BTN_UP, eSetValueWithOverwrite, NULL);
+    }
+    if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
+        xTaskNotifyFromISR(read_buttons, BTN_DOWN, eSetValueWithOverwrite, NULL);
+    }
+    if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
+        xTaskNotifyFromISR(read_buttons, BTN_SELECT, eSetValueWithOverwrite, NULL);
+    }
+    if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
+        xTaskNotifyFromISR(read_buttons, BTN_BACK, eSetValueWithOverwrite, NULL);
+    }
+
     //portYIELD_FROM_ISR();
-}
-
-static void main_menu(){
-    switch (button_pressed){
-        case BTN_SELECT:
-            switch(display_data.main_menu_select){
-                case Main_menu_select_Data_menu:
-                    display_data.menu_state = Menu_state_Data_menu;
-                    break;
-                case Main_menu_select_Max_temperature_menu:
-                    display_data.menu_state = Menu_state_Max_temperature_menu;
-                    display_data.temperature = control_data.temperature_max;
-                    break;
-                case Main_menu_select_Min_temperature_menu:
-                    display_data.menu_state = Menu_state_Min_temperature_menu;
-                    display_data.temperature = control_data.temperature_min;
-                    break;
-                case Main_menu_select_Config_menu:
-                    display_data.menu_state = Menu_state_Config_menu;
-                    break;
-            }
-            break;
-        case BTN_UP:
-            display_data.main_menu_select = (display_data.main_menu_size+display_data.main_menu_size+1)%display_data.main_menu_size;
-            break;
-        case BTN_DOWN:
-            display_data.main_menu_select = (display_data.main_menu_size+display_data.main_menu_size-1)%display_data.main_menu_size;
-            break;
-        default:
-            break;
-    }
-}
-
-static void max_temperature_menu(){
-    switch (button_pressed){
-        case BTN_SELECT:
-            display_data.menu_state = Menu_state_Main_menu;
-            if(display_data.temperature < control_data.temperature_min){
-                display_data.temperature = control_data.temperature_min + 1.0;
-            }
-            control_data.temperature_max = display_data.temperature;
-            break;
-        case BTN_UP:
-            if(display_data.temperature <= 98.0){
-                display_data.temperature += 1.0;
-            }
-            break;
-        case BTN_DOWN:
-            if(display_data.temperature >= 1.0){
-                display_data.temperature -= 1.0;
-            }            
-            break;
-        case BTN_BACK:
-            display_data.menu_state = Menu_state_Main_menu;
-            break;
-        default:
-            break;
-    }
-}
-
-static void min_temperature_menu(){
-    switch (button_pressed){
-        case BTN_SELECT:
-            display_data.menu_state = Menu_state_Main_menu;
-            if(display_data.temperature > control_data.temperature_max){
-                display_data.temperature = control_data.temperature_max - 1.0;
-            }
-            control_data.temperature_min = display_data.temperature;
-            break;
-        case BTN_UP:
-            if(display_data.temperature <= 98.0){
-                display_data.temperature += 1.0;
-            }
-            break;
-        case BTN_DOWN:
-            if(display_data.temperature >= 1.0){
-                display_data.temperature -= 0.0;
-            }            
-            break;
-        case BTN_BACK:
-            display_data.menu_state = Menu_state_Main_menu;
-            break;
-        default:
-            break;
-    }
-}
-
-static void config_menu(){
-    switch (button_pressed){
-        case BTN_SELECT:
-            display_data.menu_state = Menu_state_Main_menu;
-            if(display_data.temperature > control_data.temperature_max){
-                display_data.temperature = control_data.temperature_max - 1.0;
-            }
-            control_data.temperature_min = display_data.temperature;
-            break;
-        case BTN_UP:
-            if(display_data.temperature <= 98.0){
-                display_data.temperature += 1.0;
-            }
-            break;
-        case BTN_DOWN:
-            if(display_data.temperature >= 1.0){
-                display_data.temperature -= 0.0;
-            }            
-            break;
-        case BTN_BACK:
-            display_data.menu_state = Menu_state_Main_menu;
-            break;
-        default:
-            break;
-    }
-}
-
-void read_buttons(void *args){
-    uint32_t notification_value = 0;
-    for(;;){
-        xTaskNotifyWait(0x00, 0xffffffff, &notification_value, portMAX_DELAY);
-        ESP_LOGI(buttons_tag,"Task running: %s", "read_buttons");
-        button_pressed = notification_value;
-        switch(display_data.menu_state){
-            case Menu_state_Data_menu:
-                //Move from data menu to main menu after any button is pressed
-                display_data.menu_state = Menu_state_Main_menu;
-                break;
-            case Menu_state_Main_menu:
-                main_menu();
-                break;
-            case Menu_state_Max_temperature_menu:
-                max_temperature_menu();
-                break;
-            case Menu_state_Min_temperature_menu:
-                min_temperature_menu();
-                break;
-            case Menu_state_Config_menu:
-                config_menu();
-                break;
-        }
-    }  
 }
 
 //Motor

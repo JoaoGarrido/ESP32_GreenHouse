@@ -65,6 +65,10 @@ static void init_button_timer(double timer_interval_msec){
 }
 
 //Loop task functions
+static void manual_mode(void *args){
+
+}
+
 static void control_greenhouse(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
