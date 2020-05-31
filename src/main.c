@@ -9,11 +9,10 @@
 #include "communications.h"
 #include "greenhouse_system.h"
 #include "IO.h"
-
+#include "UI.h"
 //Header
 static void init_sync_variables();
 static void init_button_timer(double timer_interval_msec);
-extern void IRAM_ATTR timer_button_isr();
 static void control_greenhouse(void *args);
 void app_main();
 
@@ -62,6 +61,7 @@ static void init_button_timer(double timer_interval_msec){
     timer_enable_intr(TIMER_GROUP_0, TIMER_0);
     timer_isr_register(TIMER_GROUP_0, TIMER_0, timer_button_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
     timer_start(TIMER_GROUP_0, TIMER_0);
+    ESP_LOGI(startup_tag, "Timer button init END");
 }
 
 //Loop task functions
@@ -75,10 +75,12 @@ static void control_greenhouse(void *args){
         //Trigger read tasks
         xSemaphoreGive(read_DHT_Signal);
         xSemaphoreGive(read_LDR_Signal);
+        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Semaphore Give to DHT and LDR");
         //Wait for read to finish 
         for(int i = 0; i < 2; i++){
             xSemaphoreTake(x_Sem_C_Greenhouse, portMAX_DELAY);
         }
+        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Semaphore Take to DHT and LDR");
         xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
         if(sensor_data.temperature > control_data.temperature_max){
@@ -119,7 +121,7 @@ void app_main(){
     xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(write_display, "write_display", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
+    //xTaskCreatePinnedToCore(write_display, "write_display", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
 
     //MQTT Tasks
     xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);

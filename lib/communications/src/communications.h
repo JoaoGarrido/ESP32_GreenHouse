@@ -13,8 +13,8 @@
 #include "logging.h"
 #include "greenhouse_system.h"
 
-#define WIFI_SSID ""
-#define WIFI_PASS ""
+#define WIFI_SSID "GarridoNOS"
+#define WIFI_PASS "Mira32Mira32"
 
 /**Wifi**/
 //Functions

@@ -9,7 +9,7 @@ extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 /**Static variables**/
 //Button variables
 #define N_BUTTONS 4
-enum Buttons_GPIO{GPIO_BTN_UP=35, GPIO_BTN_DOWN=34, GPIO_BTN_SEL=33, GPIO_BTN_BACK=32};
+enum Buttons_GPIO{GPIO_BTN_UP=26, GPIO_BTN_DOWN=25, GPIO_BTN_SEL=33, GPIO_BTN_BACK=32};
 //ADC variables
 #define DEFAULT_VREF    1100
 #define NO_OF_SAMPLES   64          //Multisampling
@@ -18,14 +18,15 @@ static const adc_channel_t channel = ADC_CHANNEL_0;   //GPIO36
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static const adc_atten_t atten = ADC_ATTEN_DB_0;
 //DHT variables
-static const dht_sensor_type_t sensor_type = DHT_TYPE_DHT11;
+static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
 static const gpio_num_t GPIO_DHT = 5;
 //Window
-static const gpio_num_t GPIO_WINDOW = 1;
+static const gpio_num_t GPIO_WINDOW = 27;
 /**Static functions**/
 static void check_efuse(void);
 static void print_char_val_type(esp_adc_cal_value_t val_type);
 
+extern void read_buttons(void *args);
 
 static void check_efuse(void){
     //Check TP is burned into eFuse
@@ -75,9 +76,9 @@ void initialize_ports(){
     gpio_config_t dht_config = {
         .pin_bit_mask = GPIO_DHT_MASK,
         .intr_type = GPIO_PIN_INTR_DISABLE,
-        .mode = GPIO_MODE_OUTPUT_OD,
+        .mode = GPIO_MODE_INPUT,
         .pull_down_en = 0,
-        .pull_up_en = 0,
+        .pull_up_en = 1,
     };
     gpio_config(&dht_config);
     //Window
@@ -94,14 +95,14 @@ void initialize_ports(){
 
 void read_DHT(void *args){
     //Subscribe this task to TWDT, then check if it is subscribed
-    CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
-    CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
+    //CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
+    //CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
 
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
         ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
         if (dht_read_float_data(sensor_type, GPIO_DHT, &(sensor_data.humidity), &(sensor_data.temperature)) == ESP_OK){
-            CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
+            //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
         }
         xSemaphoreGive(x_Sem_C_Greenhouse);
@@ -133,7 +134,7 @@ void read_ldr(void *args) {
 
 //Buttons
 
-uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
+static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
     static uint16_t button_state[N_BUTTONS] = {0,0,0,0};
     volatile uint8_t button_read = 0;
     button_read = gpio_get_level(button_gpio);
@@ -146,21 +147,26 @@ uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
 }
 
 void IRAM_ATTR timer_button_isr(void *args){
+    TIMERG0.hw_timer[0].update = 1;
+    ets_printf("INTERRUPT\n");
     //Probably queues better than task notify because if 2 buttons are active at the same time it's possible to miss some buttons
     if(button_debounce(BTN_UP, GPIO_BTN_UP)){
-        xTaskNotifyFromISR(read_buttons, BTN_UP, eSetValueWithOverwrite, NULL);
+        xTaskNotifyFromISR(read_buttons, BTN_UP, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        xTaskNotifyFromISR(read_buttons, BTN_DOWN, eSetValueWithOverwrite, NULL);
+        xTaskNotifyFromISR(read_buttons, BTN_DOWN, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        xTaskNotifyFromISR(read_buttons, BTN_SELECT, eSetValueWithOverwrite, NULL);
+        xTaskNotifyFromISR(read_buttons, BTN_SELECT, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        xTaskNotifyFromISR(read_buttons, BTN_BACK, eSetValueWithOverwrite, NULL);
+        xTaskNotifyFromISR(read_buttons, BTN_BACK, eSetValueWithoutOverwrite, NULL);
     }
-
-    //portYIELD_FROM_ISR();
+    TIMERG0.int_clr_timers.t0 = 1;
+    //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version
+    
+    TIMERG0.hw_timer[0].config.alarm_en = TIMER_ALARM_EN;
+    
 }
 
 //Motor
