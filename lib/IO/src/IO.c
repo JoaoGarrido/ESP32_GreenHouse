@@ -109,6 +109,7 @@ void read_DHT(void *args){
             //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
         }
+        xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
 }   
 
@@ -127,6 +128,7 @@ void read_ldr(void *args) {
         uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
         ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
         ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\t\n", channel, adc_reading);
+        xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
 
