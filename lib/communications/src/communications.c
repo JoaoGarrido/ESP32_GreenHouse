@@ -6,13 +6,13 @@ static const char* BROKER_URL = "mqtt://test.mosquitto.org";
 static const int BROKER_PORT = 1883;
 static const int CONNECTED_BIT = BIT0; //Event group
 //Topics
-static const char* temp_max_topic = "Temperature_max";
-static const char* temp_min_topic = "Temperature_min";
-static const char* temp_topic = "Temperature";
-static const char* humid_topic = "Humidity";
-static const char* lumi_topic = "Luminosity";
-static const char* window_state_topic = "Window_state";
-static const char* window_topic = "Window";
+static const char* temp_max_topic = "/GreenHouse/Temperature_max";
+static const char* temp_min_topic = "/GreenHouse/Temperature_min";
+static const char* temp_topic = "/GreenHouse/Temperature";
+static const char* humid_topic = "/GreenHouse/Humidity";
+static const char* lumi_topic = "/GreenHouse/Luminosity";
+static const char* window_state_topic = "/GreenHouse/Window_state";
+static const char* window_topic = "/GreenHouse/Window";
 
 /** Variables**/
 //Static data
