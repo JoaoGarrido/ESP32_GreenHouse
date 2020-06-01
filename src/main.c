@@ -28,7 +28,7 @@ SemaphoreHandle_t read_DHT_Signal = NULL;
 SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
 //Task Handler
-TaskHandle_t th_read_buttons;
+TaskHandle_t th_button_handler;
 TaskHandle_t th_write_motor_state;
 
 //Init functions
@@ -118,7 +118,7 @@ void app_main(){
 
     //Application Tasks  
     xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(read_buttons, "read_buttons", TASK_STACK_MIN_SIZE, NULL, 10, &th_read_buttons, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, &th_button_handler, APPLICATION_CORE);
     xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);

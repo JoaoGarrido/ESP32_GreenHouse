@@ -15,7 +15,6 @@ typedef struct{
     float temperature;
 } display_data_t;
 
-void read_buttons(void *args);
-void IRAM_ATTR timer_button_isr(void *args);
+void button_handler(void *args);
 
 #endif /* UI */

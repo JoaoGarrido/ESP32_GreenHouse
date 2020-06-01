@@ -6,13 +6,14 @@ extern control_data_t control_data;
 extern SemaphoreHandle_t read_DHT_Signal;
 extern SemaphoreHandle_t read_LDR_Signal;
 extern SemaphoreHandle_t x_Sem_C_Greenhouse;
-/**Static variables**/
-//Button variables
-#define N_BUTTONS 4
-enum Buttons_GPIO{GPIO_BTN_UP=26, GPIO_BTN_DOWN=25, GPIO_BTN_SEL=33, GPIO_BTN_BACK=32};
+extern void button_handler(void *args);
+extern TaskHandle_t th_button_handler;
+/**Private variables**/
+static const gpio_num_t GPIO_BTN_UP = 26;
+static const gpio_num_t GPIO_BTN_DOWN = 25;
+static const gpio_num_t GPIO_BTN_SEL = 33;
+static const gpio_num_t GPIO_BTN_BACK = 32;
 //ADC variables
-#define DEFAULT_VREF    1100
-#define NO_OF_SAMPLES   64          //Multisampling
 static esp_adc_cal_characteristics_t *adc_chars;
 static const adc_channel_t channel = ADC_CHANNEL_0;   //GPIO36
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
@@ -22,12 +23,10 @@ static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
 static const gpio_num_t GPIO_DHT = 5;
 //Window
 static const gpio_num_t GPIO_WINDOW = 27;
+
 /**Static functions**/
 static void check_efuse(void);
 static void print_char_val_type(esp_adc_cal_value_t val_type);
-
-extern void read_buttons(void *args);
-extern TaskHandle_t th_read_buttons;
 
 static void check_efuse(void){
     //Check TP is burned into eFuse
@@ -55,12 +54,15 @@ static void print_char_val_type(esp_adc_cal_value_t val_type){
     }
 }
 
+/*Init ports*/
 void initialize_ports(){
-    //Checks
-    check_efuse();
     /*Configure ADC*/
     adc1_config_width(width);
     adc1_config_channel_atten(channel, atten);
+    check_efuse();
+    adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
+    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, atten, width, DEFAULT_VREF, adc_chars);
+    print_char_val_type(val_type);
     /*Configure GPIO*/
     //Buttons
     const uint64_t GPIO_BUTTON_MASK = (1ULL << GPIO_BTN_UP) | (1ULL << GPIO_BTN_DOWN) | (1ULL << GPIO_BTN_SEL) | (1ULL << GPIO_BTN_BACK);
@@ -94,6 +96,7 @@ void initialize_ports(){
     gpio_config(&window_config);
 }
 
+/*DHT*/
 void read_DHT(void *args){
     //Subscribe this task to TWDT, then check if it is subscribed
     //CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
@@ -106,16 +109,11 @@ void read_DHT(void *args){
             //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
         }
-        xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
 }   
 
+/*LDR*/
 void read_ldr(void *args) {
-    //Characterize ADC
-    adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
-    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, atten, width, DEFAULT_VREF, adc_chars);
-    print_char_val_type(val_type);
-    //Continuously sample ADC1
     for(;;){
         xSemaphoreTake(read_LDR_Signal, portMAX_DELAY);
         ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
@@ -129,12 +127,10 @@ void read_ldr(void *args) {
         uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
         ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
         ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\t\n", channel, adc_reading);
-        xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
 
-//Buttons
-
+/*Buttons*/
 static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
     static uint16_t button_state[N_BUTTONS] = {0,0,0,0};
     volatile uint8_t button_read = 0;
@@ -153,20 +149,25 @@ static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
 
 void IRAM_ATTR timer_button_isr(void *args){
     TIMERG0.hw_timer[0].update = 1;
-    //ets_printf("INTERRUPT\n");
-    //Probably queues better than task notify because if 2 buttons are active at the same time it's possible to miss some buttons
+    
+    /*Queues vs xTaskNotifyFromISR:
+    With queues we can handle the button presses at the same time 
+    While if we use taskNotify and 2 buttons are pressed at exactly the same time, one of the presses will probably be ignored
+    This situation is highly improbable and xTaskNotify is faster and uses less RAM
+    */
     if(button_debounce((uint32_t)BTN_UP, (uint64_t)GPIO_BTN_UP)){
-        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_UP, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_UP, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_DOWN, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_DOWN, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_SELECT, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_SELECT, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
     }
+    //
     TIMERG0.int_clr_timers.t0 = 1;
     //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version
     
@@ -174,7 +175,7 @@ void IRAM_ATTR timer_button_isr(void *args){
     
 }
 
-//Motor
+/*Window*/
 void write_motor_state(void *args){
     for(;;){
         uint32_t output_level = 3;
@@ -189,6 +190,7 @@ void write_motor_state(void *args){
     }  
 }
 
+/*Display*/
 void write_display(void *args){
     for(;;){
         ESP_LOGI(display_tag,"Task running: %s", "write_display");

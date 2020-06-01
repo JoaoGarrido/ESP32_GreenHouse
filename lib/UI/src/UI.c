@@ -117,12 +117,12 @@ static void config_menu(uint32_t current_button){
     }
 }
 
-void read_buttons(void *args){
+void button_handler(void *args){
     uint32_t current_button = 0;
     for(;;){
-        ESP_LOGI(buttons_tag, "Task running: %s", "read_buttons blocked");
+        ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
         xTaskNotifyWait(0x00, 0xffffffff, &current_button, portMAX_DELAY);
-        ESP_LOGI(buttons_tag,"Task running: %s%d", "read_buttons unblocked from button ", current_button);
+        ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
         switch(display_data.menu_state){
             case Menu_state_Data_menu:
                 //Move from data menu to main menu after any button is pressed

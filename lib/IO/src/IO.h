@@ -15,10 +15,19 @@
 #include "logging.h"
 #include "greenhouse_system.h"
 
+/*Struct defintions*/
+//Buttons
+#define N_BUTTONS 4
+//ADC
+#define DEFAULT_VREF    1100
+#define NO_OF_SAMPLES   64          //Multisampling
+
+/*Public Functions*/
 void initialize_ports();
 void write_motor_state(void *args);
 void write_display(void *args);
 void read_DHT(void *args);
 void read_ldr(void *args);
+void IRAM_ATTR timer_button_isr(void *args);
 
 #endif /* IO */
