@@ -27,6 +27,7 @@ static void check_efuse(void);
 static void print_char_val_type(esp_adc_cal_value_t val_type);
 
 extern void read_buttons(void *args);
+extern TaskHandle_t th_read_buttons;
 
 static void check_efuse(void){
     //Check TP is burned into eFuse
@@ -137,10 +138,14 @@ void read_ldr(void *args) {
 static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
     static uint16_t button_state[N_BUTTONS] = {0,0,0,0};
     volatile uint8_t button_read = 0;
+    //ets_printf("reading_gpio\n");
+
     button_read = gpio_get_level(button_gpio);
+    if(button_read) ets_printf("GPIO %lu pressed\n", button_gpio);
     button_state[button_name] = ( (button_state[button_name] << 1) | button_read | 0xE000);
 
     if(button_state[button_name] == 0xF000){
+        ets_printf("Button %u from GPIO %lu Active\n");
         return 1;
     }
     return 0;
@@ -148,19 +153,19 @@ static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
 
 void IRAM_ATTR timer_button_isr(void *args){
     TIMERG0.hw_timer[0].update = 1;
-    ets_printf("INTERRUPT\n");
+    //ets_printf("INTERRUPT\n");
     //Probably queues better than task notify because if 2 buttons are active at the same time it's possible to miss some buttons
-    if(button_debounce(BTN_UP, GPIO_BTN_UP)){
-        xTaskNotifyFromISR(read_buttons, BTN_UP, eSetValueWithoutOverwrite, NULL);
+    if(button_debounce((uint32_t)BTN_UP, (uint64_t)GPIO_BTN_UP)){
+        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_UP, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        xTaskNotifyFromISR(read_buttons, BTN_DOWN, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_DOWN, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        xTaskNotifyFromISR(read_buttons, BTN_SELECT, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_SELECT, eSetValueWithoutOverwrite, NULL);
     }
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        xTaskNotifyFromISR(read_buttons, BTN_BACK, eSetValueWithoutOverwrite, NULL);
+        xTaskNotifyFromISR(th_read_buttons, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
     }
     TIMERG0.int_clr_timers.t0 = 1;
     //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version

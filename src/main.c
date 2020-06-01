@@ -19,7 +19,7 @@ void app_main();
 /**Global variables**/
 //Data
 sensor_data_t sensor_data = {0.0, 0.0, 0, Window_state_Closed};
-control_data_t control_data = {0.0, 0.0, Window_action_Close};
+control_data_t control_data = {45.0, 30.0, Window_action_Close};
 //Semaphores
 SemaphoreHandle_t publish_DHT_Signal = NULL;
 SemaphoreHandle_t publish_LDR_Signal = NULL;
@@ -83,6 +83,7 @@ static void control_greenhouse(void *args){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Semaphore Take to DHT and LDR");
         xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
+        ESP_LOGI(task_logging,"Task running: %s | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.temperature_max, control_data.temperature_min);
         if(sensor_data.temperature > control_data.temperature_max){
             control_data.window_action = Window_action_Open;
         }
@@ -99,7 +100,7 @@ static void control_greenhouse(void *args){
         xSemaphoreGive(publish_WindowState_Signal);
         
         vTaskDelay(1000 / portTICK_RATE_MS);
-    }  
+    }
 }
 
 void app_main(){
@@ -113,7 +114,7 @@ void app_main(){
     initialize_ports();
     initialize_mqtt_app();
     init_sync_variables();
-    init_button_timer(30);
+    init_button_timer(10);
 
     //Application Tasks  
     xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);

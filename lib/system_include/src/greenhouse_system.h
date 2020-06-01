@@ -12,7 +12,7 @@
 #define TIMER_DIVIDER         16  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / (TIMER_DIVIDER*100))  // convert counter value to seconds
 
-typedef enum _Buttons{NONE, BTN_SELECT, BTN_BACK, BTN_UP, BTN_DOWN} Buttons;
+typedef enum _Buttons{NONE, BTN_SELECT=0, BTN_BACK=1, BTN_UP=2, BTN_DOWN=3} Buttons;
 
 typedef enum _Window_state{Window_state_Open, Window_state_Closed} Window_state;
 typedef struct {
