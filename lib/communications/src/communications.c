@@ -71,6 +71,8 @@ static void mqtt_subscribed_event_handler(esp_mqtt_event_handle_t event){
 static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
+    //Ignore events from this client
+    if(event->client == client_g) return ESP_OK;
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_CONNECTED");

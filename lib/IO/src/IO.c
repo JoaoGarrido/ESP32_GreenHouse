@@ -90,7 +90,7 @@ void initialize_ports(){
     gpio_config_t window_config = {
         .pin_bit_mask = GPIO_WINDOW_MASK,
         .intr_type = GPIO_PIN_INTR_DISABLE,
-        .mode = GPIO_MODE_OUTPUT_OD,
+        .mode = GPIO_MODE_OUTPUT,
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
@@ -127,8 +127,10 @@ void read_ldr(void *args) {
         adc_reading /= NO_OF_SAMPLES;
         //Convert adc_reading to voltage in mV
         uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
-        ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
-        ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\t\n", channel, adc_reading);
+        //ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
+        ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\n", channel, adc_reading);
+        //NEED TO: CONVERT TO LUMENS OR %
+        sensor_data.luminosity = adc_reading;
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
@@ -170,10 +172,11 @@ void IRAM_ATTR timer_button_isr(void *args){
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
         xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
     }
-    //
+    //Clear intr flag
     TIMERG0.int_clr_timers.t0 = 1;
     //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version
     
+    //Re-enable interrupt
     TIMERG0.hw_timer[0].config.alarm_en = TIMER_ALARM_EN;
     
 }
