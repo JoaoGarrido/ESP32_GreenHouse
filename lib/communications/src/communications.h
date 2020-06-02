@@ -27,5 +27,6 @@ void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, in
 void publish_dht_handler(void *args);
 void publish_ldr_handler(void *args);
 void publish_window_handler(void *args);
+void publish_control_data_handler(void *args);
 
 #endif /* COMMUNICATIONS */

@@ -24,10 +24,11 @@ control_data_t control_data = {45.0, 30.0, Window_action_Close, Mode_Auto};
 SemaphoreHandle_t publish_DHT_Signal = NULL;
 SemaphoreHandle_t publish_LDR_Signal = NULL;
 SemaphoreHandle_t publish_WindowState_Signal = NULL;
+SemaphoreHandle_t publish_Control_data_Signal = NULL;
 SemaphoreHandle_t read_DHT_Signal = NULL;
 SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
-//Task Handler
+//Task Handlers
 TaskHandle_t th_button_handler;
 TaskHandle_t th_write_motor_state;
 
@@ -96,7 +97,7 @@ static void control_greenhouse(void *args){
         xSemaphoreGive(publish_DHT_Signal);
         xSemaphoreGive(publish_LDR_Signal);
         xSemaphoreGive(publish_WindowState_Signal);
-        
+        xSemaphoreGive(publish_Control_data_Signal);
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }
@@ -126,4 +127,5 @@ void app_main(){
     xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_ldr_handler, "publish_ldr_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_window_handler, "publish_window_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
 }
