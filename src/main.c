@@ -19,7 +19,7 @@ void app_main();
 /**Global variables**/
 //Data
 sensor_data_t sensor_data = {0.0, 0.0, 0, Window_state_Closed};
-control_data_t control_data = {45.0, 30.0, Window_action_Close};
+control_data_t control_data = {45.0, 30.0, Window_action_Close, Mode_Auto};
 //Semaphores
 SemaphoreHandle_t publish_DHT_Signal = NULL;
 SemaphoreHandle_t publish_LDR_Signal = NULL;
@@ -65,30 +65,28 @@ static void init_button_timer(double timer_interval_msec){
 }
 
 //Loop task functions
-static void manual_mode(void *args){
-
-}
-
 static void control_greenhouse(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
         //Trigger read tasks
         xSemaphoreGive(read_DHT_Signal);
         xSemaphoreGive(read_LDR_Signal);
-        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Semaphore Give to DHT and LDR");
+        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | SemaphoreGive to DHT and LDR");
         //Wait for read to finish 
         for(int i = 0; i < 2; i++){
             xSemaphoreTake(x_Sem_C_Greenhouse, portMAX_DELAY);
         }
-        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Semaphore Take to DHT and LDR");
+        ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Passed counting semaphore DHT and LDR");
         xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
-        ESP_LOGI(task_logging,"Task running: %s | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.temperature_max, control_data.temperature_min);
-        if(sensor_data.temperature > control_data.temperature_max){
-            control_data.window_action = Window_action_Open;
-        }
-        else if(sensor_data.temperature < control_data.temperature_min){
-            control_data.window_action = Window_action_Close;
+        ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, control_data.temperature_max, control_data.temperature_min);
+        if(control_data.mode == Mode_Auto){
+            if(sensor_data.temperature > control_data.temperature_max){
+                control_data.window_action = Window_action_Open;
+            }
+            else if(sensor_data.temperature < control_data.temperature_min){
+                control_data.window_action = Window_action_Close;
+            }
         }
         //Write Motor State
         if((int)control_data.window_action != (int)sensor_data.window_state){
@@ -127,5 +125,5 @@ void app_main(){
     //MQTT Tasks
     xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_ldr_handler, "publish_ldr_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_window_state_handler, "publish_window_state_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_window_handler, "publish_window_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
 }

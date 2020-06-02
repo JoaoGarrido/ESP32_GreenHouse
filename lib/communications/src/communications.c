@@ -20,13 +20,53 @@ static const char* temp_min_topic = "/GreenHouse/Temperature_min";
 static const char* temp_topic = "/GreenHouse/Temperature";
 static const char* humid_topic = "/GreenHouse/Humidity";
 static const char* lumi_topic = "/GreenHouse/Luminosity";
-static const char* window_state_topic = "/GreenHouse/Window_state";
 static const char* window_topic = "/GreenHouse/Window";
+static const char* mode_topic = "/GreenHouse/Mode";
+
 
 /**Static functions**/
 static void initialize_nvs();
 static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event);
+static void mqtt_subscribed_event_handler(esp_mqtt_event_handle_t event);
 
+static void mqtt_subscribed_event_handler(esp_mqtt_event_handle_t event){
+    if(strncmp(temp_min_topic, event->topic, event->topic_len) == 0){
+        float rec_data = atof(event->data);
+        if(rec_data > 0.0 && rec_data < 100.0){
+            control_data.temperature_min = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }
+    }
+    else if(strncmp(temp_max_topic, event->topic, event->topic_len) == 0){
+        float rec_data = atof(event->data);
+        if(rec_data > 0.0 && rec_data < 100.0){
+            control_data.temperature_max = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }
+    }
+    else if(strncmp(mode_topic, event->topic, event->topic_len) == 0){
+        int rec_data = atoi(event->data);
+        if(rec_data >= 0 && rec_data < 2){
+            control_data.mode = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }            
+    }
+    else if(strncmp(window_topic, event->topic, event->topic_len) == 0){
+        int rec_data = atoi(event->data);
+        if(rec_data >= 0 && rec_data < 2 && control_data.mode == Mode_Manual){
+            control_data.window_action = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }            
+    }
+}
 
 static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
     esp_mqtt_client_handle_t client = event->client;
@@ -40,6 +80,8 @@ static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
             ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", temp_max_topic, msg_id);
             msg_id = esp_mqtt_client_subscribe(client, window_topic, 1);
             ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", window_topic, msg_id);
+            msg_id = esp_mqtt_client_subscribe(client, mode_topic, 1);
+            ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", mode_topic, msg_id);
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_DISCONNECTED");
@@ -57,36 +99,10 @@ static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_DATA");
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
-            
+
             //Handle subscribe topics
             /* Maybe a semaphore around control_data is necessary because of the GUI on the display*/
-            if(strncmp(temp_min_topic, event->topic, event->topic_len) == 0){
-                float rec_data = atof(event->data);
-                if(rec_data > 0.0 && rec_data < 100.0){
-                    control_data.temperature_min = rec_data;
-                }
-                else{
-                    ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
-                }
-            }
-            else if(strncmp(temp_max_topic, event->topic, event->topic_len) == 0){
-                float rec_data = atof(event->data);
-                if(rec_data > 0.0 && rec_data < 100.0){
-                    control_data.temperature_max = rec_data;
-                }
-                else{
-                    ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
-                }
-            }
-            else if(strncmp(window_topic, event->topic, event->topic_len) == 0){
-                int rec_data = atoi(event->data);
-                if(rec_data >= 0 && rec_data < 2){
-                    control_data.window_action = rec_data;
-                }
-                else{
-                    ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
-                }            
-            }
+            mqtt_subscribed_event_handler(event);
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_ERROR");
@@ -194,17 +210,17 @@ void publish_ldr_handler(void *args){
     for(;;){
         xSemaphoreTake(publish_LDR_Signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_ldr_handler");
-        sprintf(buff, "%d", sensor_data.luminosity);
+        sprintf(buff, "%u", sensor_data.luminosity);
         esp_mqtt_client_publish(client_g, lumi_topic, buff, 0, 0, 0);
     }
 }
 
-void publish_window_state_handler(void *args){
+void publish_window_handler(void *args){
     char buff[21] = "";
     for(;;){
         xSemaphoreTake(publish_WindowState_Signal, portMAX_DELAY);
-        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_state_handler");
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_handler");
         sprintf(buff, "%u", sensor_data.window_state);
-        esp_mqtt_client_publish(client_g, window_state_topic, buff, 0, 0, 0);
+        esp_mqtt_client_publish(client_g, window_topic, buff, 0, 0, 0);
     }
 }
