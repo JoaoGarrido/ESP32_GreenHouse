@@ -37,6 +37,7 @@ static void init_sync_variables(){
     publish_DHT_Signal = xSemaphoreCreateBinary();
     publish_LDR_Signal = xSemaphoreCreateBinary();
     publish_WindowState_Signal = xSemaphoreCreateBinary();
+    publish_Control_data_Signal = xSemaphoreCreateBinary();
     read_DHT_Signal = xSemaphoreCreateBinary();
     read_LDR_Signal = xSemaphoreCreateBinary();
     x_Sem_C_Greenhouse = xSemaphoreCreateCounting(2, 0);
