@@ -6,9 +6,10 @@ To do:
 * Separar MQTT do main.c -> Done
 * Adicionar lógica publish -> Done
 * Separar sensor read do main.c  -> Done
-* Leitura butões
-* Escrita LED
+* Leitura butões -> Done
+* Escrita LED -> Untested
 * Display UI
+* 
 * Explicar arquitetura
 * Explicar como as tarefas estão a comunicar entre elas
 
