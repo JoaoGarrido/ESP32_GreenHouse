@@ -1,43 +1,93 @@
 #include "communications.h"
 
-/** Definitions**/
-//Config
-static const char* BROKER_URL = "mqtt://test.mosquitto.org";
-static const int BROKER_PORT = 1883;
-static const int CONNECTED_BIT = BIT0; //Event group
-//Topics
-static const char* temp_max_topic = "/GreenHouse/Temperature_max";
-static const char* temp_min_topic = "/GreenHouse/Temperature_min";
-static const char* temp_topic = "/GreenHouse/Temperature";
-static const char* humid_topic = "/GreenHouse/Humidity";
-static const char* lumi_topic = "/GreenHouse/Luminosity";
-static const char* window_state_topic = "/GreenHouse/Window_state";
-static const char* window_topic = "/GreenHouse/Window";
-
-/** Variables**/
-//Static data
-static EventGroupHandle_t wifi_event_group;
-static esp_mqtt_client_handle_t client_g;
-//Global data
+/**Global variables**/
 extern sensor_data_t sensor_data;
+extern control_data_t control_data;
 extern SemaphoreHandle_t publish_DHT_Signal;
 extern SemaphoreHandle_t publish_LDR_Signal;
 extern SemaphoreHandle_t publish_WindowState_Signal;
+extern SemaphoreHandle_t publish_Control_data_Signal;
+/**Private variables**/
+//Wifi
+static EventGroupHandle_t wifi_event_group;
+static const int CONNECTED_BIT = BIT0; //Event group
+//Mqtt
+static esp_mqtt_client_handle_t client_g;
+static const char* BROKER_URL = "mqtt://test.mosquitto.org";
+static const int BROKER_PORT = 1883;
+//Publish
+static const char* temp_current_topic = "/GreenHouse/Temperature/current";
+static const char* humid_current_topic = "/GreenHouse/Humidity/current";
+static const char* lumi_current_topic = "/GreenHouse/Luminosity/current";
+static const char* temp_max_get_topic = "/GreenHouse/Temperature_MaxLimit/get";
+static const char* temp_min_get_topic = "/GreenHouse/Temperature_MinLimit/get";
+static const char* window_get_topic = "/GreenHouse/Window/get";
+static const char* mode_get_topic = "/GreenHouse/Mode/get";
+//Subscribe
+static const char* temp_min_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
+static const char* temp_max_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
+static const char* window_set_topic = "/GreenHouse/Window/set";
+static const char* mode_set_topic = "/GreenHouse/Mode/set";
 
-//Functions
-//Static functions
+
+/**Static functions**/
+static void initialize_nvs();
+static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event);
+static void mqtt_subscribed_event_handler(esp_mqtt_event_handle_t event);
+
+static void mqtt_subscribed_event_handler(esp_mqtt_event_handle_t event){
+    if(strncmp(temp_min_set_topic, event->topic, event->topic_len) == 0){
+        float rec_data = atof(event->data);
+        if(rec_data > 0.0 && rec_data < 100.0){
+            control_data.temperature_min = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }
+    }
+    else if(strncmp(temp_max_set_topic, event->topic, event->topic_len) == 0){
+        float rec_data = atof(event->data);
+        if(rec_data > 0.0 && rec_data < 100.0){
+            control_data.temperature_max = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }
+    }
+    else if(strncmp(mode_set_topic, event->topic, event->topic_len) == 0){
+        int rec_data = atoi(event->data);
+        if(rec_data >= 0 && rec_data < 2){
+            control_data.mode = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }            
+    }
+    else if(strncmp(window_set_topic, event->topic, event->topic_len) == 0){
+        int rec_data = atoi(event->data);
+        if(rec_data >= 0 && rec_data < 2 && control_data.mode == Mode_Manual){
+            control_data.window_action = rec_data;
+        }
+        else{
+            ESP_LOGI(mqtt_tag, "%s topic data is invalid", event->topic);
+        }
+    }
+}
+
 static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_CONNECTED");
-            msg_id = esp_mqtt_client_subscribe(client, temp_min_topic, 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
-            msg_id = esp_mqtt_client_subscribe(client, temp_max_topic, 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
-            msg_id = esp_mqtt_client_subscribe(client, window_topic, 1);
-            ESP_LOGI(mqtt_tag, "sent subscribe successful, msg_id=%d", msg_id);
+            msg_id = esp_mqtt_client_subscribe(client, temp_max_set_topic, 1);
+            ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", temp_max_set_topic, msg_id);
+            msg_id = esp_mqtt_client_subscribe(client, temp_min_set_topic, 1);
+            ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", temp_min_set_topic, msg_id);
+            msg_id = esp_mqtt_client_subscribe(client, window_set_topic, 1);
+            ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", window_set_topic, msg_id);
+            msg_id = esp_mqtt_client_subscribe(client, mode_set_topic, 1);
+            ESP_LOGI(mqtt_tag, "Sent topic %s subscribe successful, msg_id=%d", mode_set_topic, msg_id);
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_DISCONNECTED");
@@ -55,9 +105,10 @@ static esp_err_t mqtt_event_handler_callback(esp_mqtt_event_handle_t event){
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_DATA");
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
-            if (strncmp(event->data, "send binary please", event->data_len) == 0) {
-                ESP_LOGI(mqtt_tag, "Sending the binary");
-            }
+
+            //Handle subscribe topics
+            /* Maybe a semaphore around control_data is necessary because of the GUI on the display*/
+            mqtt_subscribed_event_handler(event);
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(mqtt_tag, "MQTT_EVENT_ERROR");
@@ -87,7 +138,27 @@ static void initialize_nvs(){
     ESP_ERROR_CHECK( err );
 }
 
-//Global functions
+esp_err_t wifi_event_handler(void *ctx, system_event_t *event){
+    //ESP_LOGI(wifi_tag,"Task running: %s", "wifi_event_handler");
+    switch(event->event_id) {
+        case SYSTEM_EVENT_STA_START:
+            esp_wifi_connect();
+            break;
+        case SYSTEM_EVENT_STA_GOT_IP:
+            xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
+            break;
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            /* This is a workaround as ESP32 WiFi libs don't currently
+            auto-reassociate. */
+            esp_wifi_connect();
+            xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+            break;
+        default:
+            break;
+    }
+    return ESP_OK;
+}
+
 void initialize_wifi_sta_mode(){
     initialize_nvs();
     tcpip_adapter_init();
@@ -118,29 +189,10 @@ void initialize_mqtt_app(){
     ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
     client_g = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client_g, ESP_EVENT_ANY_ID, mqtt_event_handler, client_g);
+    //xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY); //Waits for the wifi to connect to run the mqtt server
     esp_mqtt_client_start(client_g);
 }
 
-esp_err_t wifi_event_handler(void *ctx, system_event_t *event){
-    //ESP_LOGI(wifi_tag,"Task running: %s", "wifi_event_handler");
-    switch(event->event_id) {
-        case SYSTEM_EVENT_STA_START:
-            esp_wifi_connect();
-            break;
-        case SYSTEM_EVENT_STA_GOT_IP:
-            xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
-            break;
-        case SYSTEM_EVENT_STA_DISCONNECTED:
-            /* This is a workaround as ESP32 WiFi libs don't currently
-            auto-reassociate. */
-            esp_wifi_connect();
-            xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
-            break;
-        default:
-            break;
-    }
-    return ESP_OK;
-}
 
 void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
     ESP_LOGD(mqtt_tag, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
@@ -153,9 +205,9 @@ void publish_dht_handler(void *args){
         xSemaphoreTake(publish_DHT_Signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_dht_handler");
         sprintf(buff, "%f", sensor_data.temperature);
-        esp_mqtt_client_publish(client_g, temp_topic, buff, 0, 0, 0);
+        esp_mqtt_client_publish(client_g, temp_current_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", sensor_data.humidity);
-        esp_mqtt_client_publish(client_g, humid_topic, buff, 0, 0, 0);
+        esp_mqtt_client_publish(client_g, humid_current_topic, buff, 0, 0, 0);
     }
 }
 
@@ -164,17 +216,31 @@ void publish_ldr_handler(void *args){
     for(;;){
         xSemaphoreTake(publish_LDR_Signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_ldr_handler");
-        sprintf(buff, "%d", sensor_data.luminosity);
-        esp_mqtt_client_publish(client_g, lumi_topic, buff, 0, 0, 0);
+        sprintf(buff, "%u", sensor_data.luminosity);
+        esp_mqtt_client_publish(client_g, lumi_current_topic, buff, 0, 0, 0);
     }
 }
 
-void publish_window_state_handler(void *args){
+void publish_window_handler(void *args){
     char buff[21] = "";
     for(;;){
         xSemaphoreTake(publish_WindowState_Signal, portMAX_DELAY);
-        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_state_handler");
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_handler");
         sprintf(buff, "%u", sensor_data.window_state);
-        esp_mqtt_client_publish(client_g, window_state_topic, buff, 0, 0, 0);
+        esp_mqtt_client_publish(client_g, window_get_topic, buff, 0, 0, 0);
+    }
+}
+
+void publish_control_data_handler(void *args){
+    char buff[21] = "";
+    for(;;){
+        xSemaphoreTake(publish_Control_data_Signal, portMAX_DELAY);
+        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_control_data_handler");
+        sprintf(buff, "%d", control_data.mode);
+        esp_mqtt_client_publish(client_g, mode_get_topic, buff, 0, 0, 0);
+        sprintf(buff, "%f", control_data.temperature_max);
+        esp_mqtt_client_publish(client_g, temp_max_get_topic, buff, 0, 0, 0);
+        sprintf(buff, "%f", control_data.temperature_min);
+        esp_mqtt_client_publish(client_g, temp_min_get_topic, buff, 0, 0, 0);
     }
 }

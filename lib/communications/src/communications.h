@@ -13,8 +13,8 @@
 #include "logging.h"
 #include "greenhouse_system.h"
 
-#define WIFI_SSID "GarridoNOS"
-#define WIFI_PASS "Mira32Mira32"
+#define WIFI_SSID "TheMarley"
+#define WIFI_PASS "7EC2A4F115"
 
 /**Wifi**/
 //Functions
@@ -26,6 +26,7 @@ void initialize_mqtt_app();
 void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 void publish_dht_handler(void *args);
 void publish_ldr_handler(void *args);
-void publish_window_state_handler(void *args);
+void publish_window_handler(void *args);
+void publish_control_data_handler(void *args);
 
 #endif /* COMMUNICATIONS */
