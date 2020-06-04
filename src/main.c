@@ -9,7 +9,8 @@
 #include "communications.h"
 #include "greenhouse_system.h"
 #include "IO.h"
-#include "UI.h"
+#include "display_controller.h"
+#include "display.h"
 //Header
 static void init_sync_variables();
 static void init_button_timer(double timer_interval_msec);
@@ -115,6 +116,7 @@ void app_main(){
     initialize_wifi_sta_mode();
     initialize_ports();
     initialize_mqtt_app();
+    init_display();
     
     init_button_timer(10);
 

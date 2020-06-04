@@ -142,7 +142,7 @@ static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
     //ets_printf("reading_gpio\n");
 
     button_read = gpio_get_level(button_gpio);
-    if(button_read) ets_printf("GPIO %lu pressed\n", button_gpio);
+    if(button_read) ets_printf("Button %u from GPIO %lu Pressed\n");;
     button_state[button_name] = ( (button_state[button_name] << 1) | button_read | 0xE000);
 
     if(button_state[button_name] == 0xF000){

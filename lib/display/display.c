@@ -23,10 +23,10 @@ Main_menu:
 **/
 
 /**Private Variables**/
-static const int I2CDisplayAddress = 0x3C;
-static const int I2CDisplayWidth = 128;
-static const int I2CDisplayHeight = 32;
-static const int I2CResetPin = -1;
+//static const int I2CDisplayAddress = 0x3C;
+//static const int I2CDisplayWidth = 128;
+//static const int I2CDisplayHeight = 32;
+//static const int I2CResetPin = -1;
 static struct SSD1306_Device I2CDisplay;
 
 /**Private Functions**/
@@ -195,10 +195,10 @@ static void gui_update(void){
 /**Public Functions**/
 
 void init_display(void){
-    assert( SSD1306_I2CMasterInitDefault( ) == true );
-    assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
-    SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-    SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_17x30);
+    //assert( SSD1306_I2CMasterInitDefault( ) == true );
+    //assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
+    //SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
+    //SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_17x30);
     //Init user interface
     printf("%d", sizeof(UserInterface));
     UserInterface.current_menu = MAIN_MENU;

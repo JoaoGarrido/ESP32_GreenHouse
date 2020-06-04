@@ -184,6 +184,7 @@ void button_handler(void *args){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
         xTaskNotifyWait(0x00, 0xffffffff, &current_button, portMAX_DELAY);
         ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
+        ets_printf("%u\n\n", UserInterface.current_menu);
         switch(UserInterface.current_menu){
             case MAIN_MENU:
                 main_menu_handler(current_button);
