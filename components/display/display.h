@@ -1,14 +1,13 @@
 #ifndef DISPLAY
 #define DISPLAY
 
-#include "ssd1306.h"
-#include "ssd1306_draw.h"
-#include "ssd1306_font.h"
-#include "ssd1306_default_if.h"
+#include "u8g2_esp32_hal.h"
+#include "../u8g2/csrc/u8g2.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 enum All_Menu{
+    
     MAIN_MENU, 
     DATA_MENU, CONTROL_MENU, SETTINGS_MENU, 
     DATA_TEMP_MENU, DATA_HUMID_MENU, DATA_LUMI_MENU, DATA_OTHER_MENU, 
@@ -78,7 +77,7 @@ typedef struct _UI{
     uint8_t current_menu;
 } UI;
 
-void init_display(void);
+void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL);
 void update_display(void *args);
 
 #endif /* DISPLAY */

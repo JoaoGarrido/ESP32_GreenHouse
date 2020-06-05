@@ -24,11 +24,11 @@ Main_menu:
 **/
 
 /**Private Variables**/
-static const int I2CDisplayAddress = 0x3C;
-static const int I2CDisplayWidth = 128;
-static const int I2CDisplayHeight = 32;
-static const int I2CResetPin = -1;
-static struct SSD1306_Device I2CDisplay;
+static u8g2_t u8g2;
+
+#define NORTH 2,17
+#define CENTER 2, 32
+#define SOUTH 2, 63
 
 /**Private Functions**/
 
@@ -36,16 +36,16 @@ static struct SSD1306_Device I2CDisplay;
 static void show_main_menu(){
     char Text_list[3][30] = {" Data", " Control", " Settings"};
     Text_list[UserInterface.main_menu.index][0] = '*';
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_list[1], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_South, Text_list[2], SSD_COLOR_WHITE);
+    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
+    u8g2_DrawStr( &u8g2, SOUTH, Text_list[2]);
 }
 
 //Data menu
 static void show_data_menu(){
     char Text_list[4][30] = {" Temperature", " Humidity", " Luminosity", " Other"};
-    Text_list[UserInterface.main_menu.data_menu.index][0] = '*';
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_list[UserInterface.main_menu.data_menu.index], SSD_COLOR_WHITE);
+    //Text_list[UserInterface.main_menu.data_menu.index][0] = '*';
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.data_menu.index]);
 }
 
 static void show_data(Sensor_data_menu sensor_data){
@@ -58,9 +58,9 @@ static void show_data(Sensor_data_menu sensor_data){
     //Week max value
     char Text_Week[30];
     sprintf(Text_Week, "Week|Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.week_max, UserInterface.main_menu.data_menu.temp_menu.week_min);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Current, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Daily, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_South, Text_Week, SSD_COLOR_WHITE);
+    u8g2_DrawStr( &u8g2, NORTH, Text_Current);
+    u8g2_DrawStr( &u8g2, CENTER, Text_Daily);
+    u8g2_DrawStr( &u8g2, SOUTH, Text_Week);
 }
 
 static void show_data_other(){
@@ -72,14 +72,14 @@ static void show_control_menu(){
     if(UserInterface.main_menu.settings_menu.mode_menu.current_mode == Auto_Mode){
         char Text_list[2][30] = {" Max Temperature Limit", " Min Temperature Limit"};
         Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-        SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-        SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[1], SSD_COLOR_WHITE);
+        u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
+        u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
     }
     else{
         char Text_list[2][30] = {" Open", " Close"};
         Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-        SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-        SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[1], SSD_COLOR_WHITE);
+        u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
+        u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
     }
 }
 
@@ -90,22 +90,22 @@ static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_me
     }
     char Text_Temp[10];
     sprintf(Text_Temp, "%.2f", temp_limit_menu.temperature);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_limit, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Temp, SSD_COLOR_WHITE);
+    u8g2_DrawStr( &u8g2, NORTH, Text_limit);
+    u8g2_DrawStr( &u8g2, CENTER, Text_Temp);
 }
 
 //Settings menu
 static void show_settings_menu(){
     char Text_list[1][30] = {" Mode"};
     Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
+    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
 }
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
     Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[1], SSD_COLOR_WHITE);
+    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
 }
 
 //Update GUI state
@@ -151,21 +151,27 @@ static void update_menu(void){
 
 /**Public Functions**/
 
-void init_display(void){
-    assert( SSD1306_I2CMasterInitDefault( ) == true );
-    assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
-    SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-    SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_9x15);
+void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
+    u8g2_esp32_hal_t u8g2_esp32_hal = U8G2_ESP32_HAL_DEFAULT;
+	u8g2_esp32_hal.sda   = PIN_SDA;
+	u8g2_esp32_hal.scl  = PIN_SCL;
+	u8g2_esp32_hal_init(u8g2_esp32_hal);
+	//init u8g2
+	u8g2_Setup_ssd1306_i2c_128x32_univision_f( &u8g2, U8G2_R0, u8g2_esp32_i2c_byte_cb, u8g2_esp32_gpio_and_delay_cb); 
+	u8x8_SetI2CAddress( &u8g2.u8x8, 0x78);
+    u8g2_SetPowerSave(&u8g2, 0);
+    u8g2_ClearBuffer(&u8g2);
+    u8g2_SetFont(&u8g2, u8g2_font_ncenB14_tr);
 }
 
 void update_display(void* args){
     for(;;){
         refresh_data();
         //if(UserInterface.current_menu != previous_menu){
-        SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
+        u8g2_ClearBuffer(&u8g2);
         update_menu();   
         //}
-        SSD1306_Update( &I2CDisplay);
+	    u8g2_SendBuffer(&u8g2);
         vTaskDelay(10);
     }
 }

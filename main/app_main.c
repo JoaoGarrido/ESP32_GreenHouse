@@ -4,6 +4,7 @@
 #include "freertos/queue.h"
 #include "driver/timer.h"
 #include "driver/periph_ctrl.h"
+#include "esp_system.h"
 //Project libraries
 #include "logging.h"
 #include "communications.h"
@@ -117,7 +118,7 @@ void app_main(){
     initialize_ports();
     initialize_mqtt_app();
     init_gui();
-    init_display();
+    init_display( 21, 22);
     init_button_timer(10);
 
     //Application Tasks  

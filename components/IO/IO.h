@@ -11,9 +11,9 @@
 #include "driver/timer.h"
 #include "driver/periph_ctrl.h"
 //Project libraries
-#include "dht.h"
 #include "logging.h"
 #include "greenhouse_system.h"
+#include "dht.h"
 
 /*Struct defintions*/
 //Buttons
