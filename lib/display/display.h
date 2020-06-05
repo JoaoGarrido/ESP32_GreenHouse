@@ -7,6 +7,7 @@
 #include "ssd1306_default_if.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
 enum All_Menu{
     MAIN_MENU, 
     DATA_MENU, CONTROL_MENU, SETTINGS_MENU, 
@@ -78,6 +79,6 @@ typedef struct _UI{
 } UI;
 
 void init_display(void);
-void update_display(void);
+void update_display(void *args);
 
 #endif /* DISPLAY */

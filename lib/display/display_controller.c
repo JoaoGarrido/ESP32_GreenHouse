@@ -172,10 +172,22 @@ static void settings_mode_menu_handler(uint32_t current_button){
 }
 
 /**Public Functions**/
-void refresh_gui(void *args){
-    for(;;){
+void init_gui(void *args){
+    //Init user interface
+    printf("%d", sizeof(UserInterface));
+    UserInterface.current_menu = MAIN_MENU;
+    UserInterface.main_menu.size = 3;
+    UserInterface.main_menu.data_menu.size = 4;
+    UserInterface.main_menu.control_menu.size = 2;
+    UserInterface.main_menu.settings_menu.size = 1;
+    //Other variables initialized to 0
+}
 
-    }
+void refresh_data(){
+    UserInterface.main_menu.data_menu.temp_menu.current = sensor_data.temperature;
+    UserInterface.main_menu.data_menu.humid_menu.current = sensor_data.humidity;
+    UserInterface.main_menu.data_menu.lumi_menu.current = sensor_data.luminosity;
+    UserInterface.main_menu.settings_menu.mode_menu.current_mode = control_data.mode;
 }
 
 void button_handler(void *args){

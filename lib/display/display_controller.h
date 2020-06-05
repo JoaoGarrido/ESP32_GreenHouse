@@ -5,6 +5,7 @@
 #include "greenhouse_system.h"
 #include "logging.h"
 
+void init_gui();
 void button_handler(void *args);
 void refresh_gui(void *args);
 

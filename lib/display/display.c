@@ -1,5 +1,6 @@
 #include "display.h"
 
+extern void refresh_data();
 /**Public Variables**/
 UI UserInterface;
 /** Basic UI Logic
@@ -23,10 +24,10 @@ Main_menu:
 **/
 
 /**Private Variables**/
-//static const int I2CDisplayAddress = 0x3C;
-//static const int I2CDisplayWidth = 128;
-//static const int I2CDisplayHeight = 32;
-//static const int I2CResetPin = -1;
+static const int I2CDisplayAddress = 0x3C;
+static const int I2CDisplayWidth = 128;
+static const int I2CDisplayHeight = 32;
+static const int I2CResetPin = -1;
 static struct SSD1306_Device I2CDisplay;
 
 /**Private Functions**/
@@ -152,7 +153,7 @@ static void show_settings_mode(){
 }
 
 //Update GUI state
-static void gui_update(void){
+static void update_menu(void){
     switch(UserInterface.current_menu){
         case MAIN_MENU:
             show_main_menu();
@@ -195,25 +196,19 @@ static void gui_update(void){
 /**Public Functions**/
 
 void init_display(void){
-    //assert( SSD1306_I2CMasterInitDefault( ) == true );
-    //assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
-    //SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-    //SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_17x30);
-    //Init user interface
-    printf("%d", sizeof(UserInterface));
-    UserInterface.current_menu = MAIN_MENU;
-    UserInterface.main_menu.size = 3;
-    UserInterface.main_menu.data_menu.size = 4;
-    UserInterface.main_menu.control_menu.size = 2;
-    UserInterface.main_menu.settings_menu.size = 1;
+    assert( SSD1306_I2CMasterInitDefault( ) == true );
+    assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
+    SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
+    SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_17x30);
 }
 
-void update_display(void){
+void update_display(void* args){
     for(;;){
         static int previous_menu = 0;
+        refresh_data();
         if(UserInterface.current_menu != previous_menu){
             SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-            gui_update();   
+            update_menu();   
         }
         previous_menu = UserInterface.current_menu;
         SSD1306_Update( &I2CDisplay);
