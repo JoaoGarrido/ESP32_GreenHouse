@@ -37,69 +37,30 @@ static void show_main_menu(){
     char Text_list[3][30] = {" Data", " Control", " Settings"};
     Text_list[UserInterface.main_menu.index][0] = '*';
     SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[1], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[2], SSD_COLOR_WHITE);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_list[1], SSD_COLOR_WHITE);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_South, Text_list[2], SSD_COLOR_WHITE);
 }
 
 //Data menu
 static void show_data_menu(){
     char Text_list[4][30] = {" Temperature", " Humidity", " Luminosity", " Other"};
     Text_list[UserInterface.main_menu.data_menu.index][0] = '*';
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[0], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[1], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[2], SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_list[3], SSD_COLOR_WHITE);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_list[UserInterface.main_menu.data_menu.index], SSD_COLOR_WHITE);
 }
 
-static void show_data_temp(){
-    char Text_Temperature_Menu[30] = "Temperature Menu";
+static void show_data(Sensor_data_menu sensor_data){
     //Current value
-    char Text_Temp_Current[30];
-    sprintf(Text_Temp_Current, "Current: %.2f", UserInterface.main_menu.data_menu.temp_menu.current);
+    char Text_Current[30];
+    sprintf(Text_Current, "Current: %.2f", UserInterface.main_menu.data_menu.temp_menu.current);
     //Daily max value
-    char Text_Temp_Daily[30];
-    sprintf(Text_Temp_Daily, "Daily-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.daily_max, UserInterface.main_menu.data_menu.temp_menu.daily_min);
+    char Text_Daily[30];
+    sprintf(Text_Daily, "Day|Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.daily_max, UserInterface.main_menu.data_menu.temp_menu.daily_min);
     //Week max value
-    char Text_Temp_Week[30];
-    sprintf(Text_Temp_Week, "Week-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.week_max, UserInterface.main_menu.data_menu.temp_menu.week_min);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Temperature_Menu, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_NorthEast, Text_Temp_Current, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Temp_Daily, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_SouthEast, Text_Temp_Week, SSD_COLOR_WHITE);
-}
-
-static void show_data_humid(){
-    char Text_Humidity_Menu[30] = "Humidity Menu";
-    //Current value
-    char Text_Humid_Current[30];
-    sprintf(Text_Humid_Current, "Current: %.2f", UserInterface.main_menu.data_menu.humid_menu.current);
-    //Daily max value
-    char Text_Humid_Daily[30];
-    sprintf(Text_Humid_Daily, "Daily-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.humid_menu.daily_max, UserInterface.main_menu.data_menu.humid_menu.daily_min);
-    //Week max value
-    char Text_Humid_Week[30];
-    sprintf(Text_Humid_Week, "Week-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.humid_menu.week_max, UserInterface.main_menu.data_menu.humid_menu.week_min);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Humidity_Menu, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_NorthEast, Text_Humid_Current, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Humid_Daily, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_SouthEast, Text_Humid_Week, SSD_COLOR_WHITE);
-}
-
-static void show_data_lumi(){
-    char Text_Luminosity_Menu[30] = "Luminosity Menu";
-    //Current value
-    char Text_Lumi_Current[30];
-    sprintf(Text_Lumi_Current, "Current: %.2f", UserInterface.main_menu.data_menu.lumi_menu.current);
-    //Daily max value
-    char Text_Lumi_Daily[30];
-    sprintf(Text_Lumi_Daily, "Daily-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.lumi_menu.daily_max, UserInterface.main_menu.data_menu.lumi_menu.daily_min);
-    //Week max value
-    char Text_Lumi_Week[30];
-    sprintf(Text_Lumi_Week, "Week-> Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.lumi_menu.week_max, UserInterface.main_menu.data_menu.lumi_menu.week_min);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Luminosity_Menu, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_NorthEast, Text_Lumi_Current, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Lumi_Daily, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_SouthEast, Text_Lumi_Week, SSD_COLOR_WHITE);
+    char Text_Week[30];
+    sprintf(Text_Week, "Week|Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.week_max, UserInterface.main_menu.data_menu.temp_menu.week_min);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Current, SSD_COLOR_WHITE);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Daily, SSD_COLOR_WHITE);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_South, Text_Week, SSD_COLOR_WHITE);
 }
 
 static void show_data_other(){
@@ -168,13 +129,13 @@ static void update_menu(void){
             show_settings_menu();
             break;
         case DATA_TEMP_MENU:
-            show_data_temp();
+            show_data(UserInterface.main_menu.data_menu.temp_menu);
             break;
         case DATA_HUMID_MENU:
-            show_data_humid();
+            show_data(UserInterface.main_menu.data_menu.humid_menu);
             break;
         case DATA_LUMI_MENU:
-            show_data_lumi();
+            show_data(UserInterface.main_menu.data_menu.lumi_menu);
             break;
         case DATA_OTHER_MENU:
             show_data_other();
@@ -199,17 +160,17 @@ void init_display(void){
     assert( SSD1306_I2CMasterInitDefault( ) == true );
     assert( SSD1306_I2CMasterAttachDisplayDefault( &I2CDisplay, I2CDisplayWidth, I2CDisplayHeight, I2CDisplayAddress, I2CResetPin ) == true );
     SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-    SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_17x30);
+    SSD1306_SetFont( &I2CDisplay, &Font_liberation_mono_9x15);
 }
 
 void update_display(void* args){
     for(;;){
-        static int previous_menu = 0;
+        static int previous_menu = -1;
         refresh_data();
-        if(UserInterface.current_menu != previous_menu){
-            SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
-            update_menu();   
-        }
+        //if(UserInterface.current_menu != previous_menu){
+        SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
+        update_menu();   
+        //}
         previous_menu = UserInterface.current_menu;
         SSD1306_Update( &I2CDisplay);
         vTaskDelay(10);
