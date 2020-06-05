@@ -83,19 +83,14 @@ static void show_control_menu(){
     }
 }
 
-static void show_control_temp_max(){
-    char Text_Temp_max_limit[30] = "Max Temperature Limit";
+static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_menu temp_limit_menu){
+    char Text_limit[30] = "    Temperature";
+    for(int i = 0; i < 3; i++){
+        Text_limit[i] = temp_limit_type[i];
+    }
     char Text_Temp[10];
-    sprintf(Text_Temp, "%.2f", UserInterface.main_menu.control_menu.temp_max_menu.temperature);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Temp_max_limit, SSD_COLOR_WHITE);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Temp, SSD_COLOR_WHITE);
-}
-
-static void show_control_temp_min(){
-    char Text_Temp_min_limit[30] = "Min Temperature Limit";
-    char Text_Temp[10];
-    sprintf(Text_Temp, "%.2f", UserInterface.main_menu.control_menu.temp_min_menu.temperature);
-    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_Temp_min_limit, SSD_COLOR_WHITE);
+    sprintf(Text_Temp, "%.2f", temp_limit_menu.temperature);
+    SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_North, Text_limit, SSD_COLOR_WHITE);
     SSD1306_FontDrawAnchoredString( &I2CDisplay, TextAnchor_Center, Text_Temp, SSD_COLOR_WHITE);
 }
 
@@ -141,10 +136,10 @@ static void update_menu(void){
             show_data_other();
             break;
         case CONTROL_TEMP_MAX_MENU:
-            show_control_temp_max();
+            show_control_temp_limit("Max", UserInterface.main_menu.control_menu.temp_max_menu);
             break;
         case CONTROL_TEMP_MIN_MENU:
-            show_control_temp_min();
+            show_control_temp_limit("Min", UserInterface.main_menu.control_menu.temp_min_menu);
             break;
         case SETTINGS_MODE_MENU:
             show_settings_mode();
@@ -165,13 +160,11 @@ void init_display(void){
 
 void update_display(void* args){
     for(;;){
-        static int previous_menu = -1;
         refresh_data();
         //if(UserInterface.current_menu != previous_menu){
         SSD1306_Clear( &I2CDisplay, SSD_COLOR_BLACK);
         update_menu();   
         //}
-        previous_menu = UserInterface.current_menu;
         SSD1306_Update( &I2CDisplay);
         vTaskDelay(10);
     }
