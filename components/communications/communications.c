@@ -220,9 +220,9 @@ void publish_control_data_handler(void *args){
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_control_data_handler");
         sprintf(buff, "%d", control_data.mode);
         esp_mqtt_client_publish(client_g, mode_get_topic, buff, 0, 0, 0);
-        sprintf(buff, "%f", control_data.temperature_max);
-        esp_mqtt_client_publish(client_g, temp_max_get_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", control_data.temperature_min);
         esp_mqtt_client_publish(client_g, temp_min_get_topic, buff, 0, 0, 0);
+        sprintf(buff, "%f", control_data.temperature_max);
+        esp_mqtt_client_publish(client_g, temp_max_get_topic, buff, 0, 0, 0);
     }
 }

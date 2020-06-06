@@ -85,7 +85,7 @@ static void control_greenhouse(void *args){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Passed counting semaphore DHT and LDR");
         xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
-        ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, control_data.temperature_max, control_data.temperature_min);
+        ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Window: %d->%d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, sensor_data.window_state, control_data.window_action, control_data.temperature_max, control_data.temperature_min);
         
         if(control_data.mode == Mode_Auto){
             if(sensor_data.temperature > control_data.temperature_max){

@@ -126,12 +126,14 @@ static void data_show_menu_handler(uint32_t current_button){
 }
 
 static void control_temp_menu_handler(uint32_t current_button){
-    float *temp;
+    float *temp, *control_temp;
     if(UserInterface.current_menu == CONTROL_TEMP_MAX_MENU){
         temp = &(UserInterface.main_menu.control_menu.temp_max_menu.temperature);
+        control_temp = &(control_data.temperature_max);
     }
     else{
         temp = &(UserInterface.main_menu.control_menu.temp_min_menu.temperature);
+        control_temp = &(control_data.temperature_min);
     }
     switch(current_button){
         case BTN_UP:
@@ -141,7 +143,7 @@ static void control_temp_menu_handler(uint32_t current_button){
             (*temp) = (*temp) - 1.0; 
             break;
         case BTN_SELECT:
-            control_data.temperature_max = (*temp);
+            (*control_temp) = (*temp);
             break;
         case BTN_BACK:
             UserInterface.current_menu = CONTROL_MENU;

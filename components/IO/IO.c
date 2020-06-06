@@ -90,7 +90,7 @@ void initialize_ports(){
     gpio_config_t window_config = {
         .pin_bit_mask = GPIO_WINDOW_MASK,
         .intr_type = GPIO_PIN_INTR_DISABLE,
-        .mode = GPIO_MODE_OUTPUT,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
@@ -191,9 +191,11 @@ void IRAM_ATTR timer_button_isr(void *args){
 void write_motor_state(void *args){
     for(;;){
         uint32_t output_level = 3;
+        sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
         xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
         ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
-        if(output_level < 3){
+        ets_printf("%d", output_level);
+        if(output_level < 3){            
             gpio_set_level(GPIO_WINDOW, output_level);
         }
         else{
