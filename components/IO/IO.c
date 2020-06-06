@@ -7,7 +7,7 @@ extern SemaphoreHandle_t read_DHT_Signal;
 extern SemaphoreHandle_t read_LDR_Signal;
 extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 extern void button_handler(void *args);
-extern TaskHandle_t th_button_handler;
+extern QueueHandle_t xButtonQueue;
 
 /**Private variables**/
 static const gpio_num_t GPIO_BTN_UP = 26;
@@ -90,7 +90,7 @@ void initialize_ports(){
     gpio_config_t window_config = {
         .pin_bit_mask = GPIO_WINDOW_MASK,
         .intr_type = GPIO_PIN_INTR_DISABLE,
-        .mode = GPIO_MODE_OUTPUT,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
@@ -102,13 +102,15 @@ void read_DHT(void *args){
     //Subscribe this task to TWDT, then check if it is subscribed
     //CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
     //CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
-
+    float humidity = 0.0, temperature = 0.0;
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
         ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
-        if (dht_read_float_data(sensor_type, GPIO_DHT, &(sensor_data.humidity), &(sensor_data.temperature)) == ESP_OK){
+        if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
             //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
+            sensor_data.temperature = temperature;
+            sensor_data.humidity = humidity;
         }
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
@@ -154,27 +156,31 @@ static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
 
 void IRAM_ATTR timer_button_isr(void *args){
     TIMERG0.hw_timer[0].update = 1;
-    
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    uint8_t button_to_queue;
     /*Queues vs xTaskNotifyFromISR:
-    With queues we can handle the button presses at the same time 
-    While if we use taskNotify and 2 buttons are pressed at exactly the same time, one of the presses will probably be ignored
-    This situation is highly improbable and xTaskNotify is faster and uses less RAM
+    With queues we can handle two button presses at the same time 
+    While if we use taskNotify and 2 buttons are pressed before the button handler ends, one of the presses will be ignored
     */
-    if(button_debounce((uint32_t)BTN_UP, (uint64_t)GPIO_BTN_UP)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_UP, eSetValueWithoutOverwrite, NULL);
+    if(button_debounce(BTN_UP, GPIO_BTN_UP)){
+        button_to_queue = BTN_UP;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
     }
     if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_DOWN, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_DOWN;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
     }
     if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_SELECT, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_SELECT;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
     }
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_BACK;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
     }
     //Clear intr flag
-    TIMERG0.int_clr_timers.t0 = 1;
-    //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version
+    //TIMERG0.int_clr_timers.t0 = 1; //ESP-IDF 3.xx
+    timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //ESP-IDF version 4.xx
     
     //Re-enable interrupt
     TIMERG0.hw_timer[0].config.alarm_en = TIMER_ALARM_EN;
@@ -184,23 +190,17 @@ void IRAM_ATTR timer_button_isr(void *args){
 void write_motor_state(void *args){
     for(;;){
         uint32_t output_level = 3;
+        sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
         xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
         ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
-        if(output_level < 3){
+        ets_printf("%d", output_level);
+        if(output_level < 3){            
             gpio_set_level(GPIO_WINDOW, output_level);
         }
         else{
             ESP_LOGI(motor_tag,"ERROR invalid output level");
         }
     }  
-}
-
-/*Display*/
-void write_display(void *args){
-    for(;;){
-        ESP_LOGI(display_tag,"Task running: %s", "write_display");
-        vTaskDelay(1000 / portTICK_RATE_MS);
-    }
 }
 
 void write_stats(void *args) {

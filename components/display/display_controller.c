@@ -4,6 +4,7 @@
 extern UI UserInterface;
 extern control_data_t control_data;
 extern sensor_data_t sensor_data;
+extern QueueHandle_t xButtonQueue;
 
 /**Private Functions**/
 static void main_menu_handler(uint32_t current_button){
@@ -125,12 +126,14 @@ static void data_show_menu_handler(uint32_t current_button){
 }
 
 static void control_temp_menu_handler(uint32_t current_button){
-    float *temp;
+    float *temp, *control_temp;
     if(UserInterface.current_menu == CONTROL_TEMP_MAX_MENU){
         temp = &(UserInterface.main_menu.control_menu.temp_max_menu.temperature);
+        control_temp = &(control_data.temperature_max);
     }
     else{
         temp = &(UserInterface.main_menu.control_menu.temp_min_menu.temperature);
+        control_temp = &(control_data.temperature_min);
     }
     switch(current_button){
         case BTN_UP:
@@ -140,7 +143,7 @@ static void control_temp_menu_handler(uint32_t current_button){
             (*temp) = (*temp) - 1.0; 
             break;
         case BTN_SELECT:
-            control_data.temperature_max = (*temp);
+            (*control_temp) = (*temp);
             break;
         case BTN_BACK:
             UserInterface.current_menu = CONTROL_MENU;
@@ -180,6 +183,7 @@ void init_gui(void *args){
     UserInterface.main_menu.data_menu.size = 4;
     UserInterface.main_menu.control_menu.size = 2;
     UserInterface.main_menu.settings_menu.size = 1;
+    UserInterface.main_menu.settings_menu.mode_menu.size = 2;
     //Other variables initialized to 0
 }
 
@@ -191,10 +195,10 @@ void refresh_data(){
 }
 
 void button_handler(void *args){
-    uint32_t current_button = 0;
+    uint8_t current_button = 0;
     for(;;){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
-        xTaskNotifyWait(0x00, 0xffffffff, &current_button, portMAX_DELAY);
+        xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);
         ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
         ets_printf("%u\n\n", UserInterface.current_menu);
         switch(UserInterface.current_menu){

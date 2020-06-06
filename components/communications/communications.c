@@ -3,10 +3,8 @@
 /**Global variables**/
 extern sensor_data_t sensor_data;
 extern control_data_t control_data;
-extern SemaphoreHandle_t publish_DHT_Signal;
-extern SemaphoreHandle_t publish_LDR_Signal;
-extern SemaphoreHandle_t publish_WindowState_Signal;
-extern SemaphoreHandle_t publish_Control_data_Signal;
+extern SemaphoreHandle_t publish_sensor_signal;
+extern SemaphoreHandle_t publish_control_signal;
 /**Private variables**/
 //Wifi
 static EventGroupHandle_t wifi_event_group;
@@ -24,8 +22,8 @@ static const char* temp_min_get_topic = "/GreenHouse/Temperature_MinLimit/get";
 static const char* window_get_topic = "/GreenHouse/Window/get";
 static const char* mode_get_topic = "/GreenHouse/Mode/get";
 //Subscribe
-static const char* temp_min_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
 static const char* temp_max_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
+static const char* temp_min_set_topic = "/GreenHouse/Temperature_MinLimit/set";
 static const char* window_set_topic = "/GreenHouse/Window/set";
 static const char* mode_set_topic = "/GreenHouse/Mode/set";
 
@@ -199,34 +197,18 @@ void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, in
     mqtt_event_handler_callback(event_data);
 }
 
-void publish_dht_handler(void *args){
+void publish_sensor_data_handler(void *args){
     char buff[21] = "";
     for(;;){
-        xSemaphoreTake(publish_DHT_Signal, portMAX_DELAY);
+        xSemaphoreTake(publish_sensor_signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_dht_handler");
         sprintf(buff, "%f", sensor_data.temperature);
         esp_mqtt_client_publish(client_g, temp_current_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", sensor_data.humidity);
         esp_mqtt_client_publish(client_g, humid_current_topic, buff, 0, 0, 0);
-    }
-}
-
-void publish_ldr_handler(void *args){
-    char buff[21] = "";
-    for(;;){
-        xSemaphoreTake(publish_LDR_Signal, portMAX_DELAY);
-        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_ldr_handler");
         sprintf(buff, "%u", sensor_data.luminosity);
         esp_mqtt_client_publish(client_g, lumi_current_topic, buff, 0, 0, 0);
-    }
-}
-
-void publish_window_handler(void *args){
-    char buff[21] = "";
-    for(;;){
-        xSemaphoreTake(publish_WindowState_Signal, portMAX_DELAY);
-        ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_handler");
-        sprintf(buff, "%u", sensor_data.window_state);
+        sprintf(buff, "%d", sensor_data.window_state);
         esp_mqtt_client_publish(client_g, window_get_topic, buff, 0, 0, 0);
     }
 }
@@ -234,13 +216,13 @@ void publish_window_handler(void *args){
 void publish_control_data_handler(void *args){
     char buff[21] = "";
     for(;;){
-        xSemaphoreTake(publish_Control_data_Signal, portMAX_DELAY);
+        xSemaphoreTake(publish_control_signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_control_data_handler");
         sprintf(buff, "%d", control_data.mode);
         esp_mqtt_client_publish(client_g, mode_get_topic, buff, 0, 0, 0);
-        sprintf(buff, "%f", control_data.temperature_max);
-        esp_mqtt_client_publish(client_g, temp_max_get_topic, buff, 0, 0, 0);
         sprintf(buff, "%f", control_data.temperature_min);
         esp_mqtt_client_publish(client_g, temp_min_get_topic, buff, 0, 0, 0);
+        sprintf(buff, "%f", control_data.temperature_max);
+        esp_mqtt_client_publish(client_g, temp_max_get_topic, buff, 0, 0, 0);
     }
 }

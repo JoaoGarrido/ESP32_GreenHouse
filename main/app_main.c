@@ -4,6 +4,7 @@
 #include "freertos/queue.h"
 #include "driver/timer.h"
 #include "driver/periph_ctrl.h"
+#include "freertos/queue.h"
 #include "esp_system.h"
 //Project libraries
 #include "logging.h"
@@ -23,26 +24,27 @@ void app_main();
 sensor_data_t sensor_data = {0.0, 0.0, 0, Window_state_Closed};
 control_data_t control_data = {45.0, 30.0, Window_action_Close, Mode_Auto};
 //Semaphores
-SemaphoreHandle_t publish_DHT_Signal = NULL;
-SemaphoreHandle_t publish_LDR_Signal = NULL;
-SemaphoreHandle_t publish_WindowState_Signal = NULL;
-SemaphoreHandle_t publish_Control_data_Signal = NULL;
+SemaphoreHandle_t publish_sensor_signal = NULL;
+SemaphoreHandle_t publish_control_signal = NULL;
 SemaphoreHandle_t read_DHT_Signal = NULL;
 SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
+QueueHandle_t xButtonQueue = NULL;
 //Task Handlers
-TaskHandle_t th_button_handler;
 TaskHandle_t th_write_motor_state;
 
 //Init functions
 static void init_sync_variables(){
-    publish_DHT_Signal = xSemaphoreCreateBinary();
-    publish_LDR_Signal = xSemaphoreCreateBinary();
-    publish_WindowState_Signal = xSemaphoreCreateBinary();
-    publish_Control_data_Signal = xSemaphoreCreateBinary();
+    publish_sensor_signal = xSemaphoreCreateBinary();
+    publish_control_signal = xSemaphoreCreateBinary();
     read_DHT_Signal = xSemaphoreCreateBinary();
     read_LDR_Signal = xSemaphoreCreateBinary();
     x_Sem_C_Greenhouse = xSemaphoreCreateCounting(2, 0);
+    const uint8_t BUTTON_QUEUE_LENGTH = 16;
+    xButtonQueue = xQueueCreate( BUTTON_QUEUE_LENGTH, sizeof(uint8_t));
+    if(xButtonQueue == NULL){
+        ets_printf("Couldn't init Button Queue\n");
+    }
 }
 
 static void init_button_timer(double timer_interval_msec){
@@ -83,7 +85,7 @@ static void control_greenhouse(void *args){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse | Passed counting semaphore DHT and LDR");
         xQueueReset(x_Sem_C_Greenhouse); //Hack->Use reset queue to reset counting semaphore
         //Control Algorithm
-        ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, control_data.temperature_max, control_data.temperature_min);
+        ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Window: %d->%d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, sensor_data.window_state, control_data.window_action, control_data.temperature_max, control_data.temperature_min);
         
         if(control_data.mode == Mode_Auto){
             if(sensor_data.temperature > control_data.temperature_max){
@@ -94,14 +96,12 @@ static void control_greenhouse(void *args){
             }
         }
         //Write Motor State
-        if((int)control_data.window_action != (int)sensor_data.window_state){
+        if(control_data.window_action != sensor_data.window_state){
             xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
         }
         //Trigger publish tasks on WiFi Core
-        xSemaphoreGive(publish_DHT_Signal);
-        xSemaphoreGive(publish_LDR_Signal);
-        xSemaphoreGive(publish_WindowState_Signal);
-        xSemaphoreGive(publish_Control_data_Signal);
+        xSemaphoreGive(publish_sensor_signal);
+        xSemaphoreGive(publish_control_signal);
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }
@@ -123,7 +123,7 @@ void app_main(){
 
     //Application Tasks  
     xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, &th_button_handler, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     //xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
@@ -131,8 +131,6 @@ void app_main(){
     xTaskCreatePinnedToCore(write_stats, "write_stats", TASK_STACK_MIN_SIZE, NULL, 3, NULL, APPLICATION_CORE);
 
     //MQTT Tasks
-    xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_ldr_handler, "publish_ldr_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_window_handler, "publish_window_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_sensor_data_handler, "publish_sensor_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
 }

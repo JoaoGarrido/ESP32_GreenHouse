@@ -22,13 +22,12 @@ Main_menu:
 ---Auto
 ---Manual
 **/
-
-/**Private Variables**/
 u8g2_t u8g2;
 
 #define NORTH 2,17
 #define CENTER 2, 32
 #define SOUTH 2, 63
+#define SOUTH_EAST 80, 63
 
 /**Private Functions**/
 
@@ -44,20 +43,23 @@ static void show_main_menu(){
 //Data menu
 static void show_data_menu(){
     char Text_list[4][30] = {" Temperature", " Humidity", " Luminosity", " Other"};
+    char Text_position[10];
+    sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.data_menu.index+1, UserInterface.main_menu.data_menu.size);
     //Text_list[UserInterface.main_menu.data_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.data_menu.index]);
+    u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);
 }
 
 static void show_data(Sensor_data_menu sensor_data){
     //Current value
     char Text_Current[30];
-    sprintf(Text_Current, "Current: %.2f", UserInterface.main_menu.data_menu.temp_menu.current);
+    sprintf(Text_Current, "Curr: %.2f", sensor_data.current);
     //Daily max value
     char Text_Daily[30];
-    sprintf(Text_Daily, "Day|Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.daily_max, UserInterface.main_menu.data_menu.temp_menu.daily_min);
+    sprintf(Text_Daily, "Day|Max: %.2f\nMin: %.2f", sensor_data.daily_max, sensor_data.daily_min);
     //Week max value
     char Text_Week[30];
-    sprintf(Text_Week, "Week|Max: %.2f Min: %.2f", UserInterface.main_menu.data_menu.temp_menu.week_max, UserInterface.main_menu.data_menu.temp_menu.week_min);
+    sprintf(Text_Week, "Week|Max: %.2f\nMin: %.2f", sensor_data.week_max, sensor_data.week_min);
     u8g2_DrawStr( &u8g2, NORTH, Text_Current);
     u8g2_DrawStr( &u8g2, CENTER, Text_Daily);
     u8g2_DrawStr( &u8g2, SOUTH, Text_Week);
@@ -97,13 +99,13 @@ static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_me
 //Settings menu
 static void show_settings_menu(){
     char Text_list[1][30] = {" Mode"};
-    Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
+    Text_list[UserInterface.main_menu.settings_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
 }
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
-    Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
+    Text_list[UserInterface.main_menu.settings_menu.mode_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
     u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
 }
@@ -164,7 +166,7 @@ void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
     ets_printf("Finished I2C setup\n");
     u8g2_SetPowerSave(&u8g2, 0);
     u8g2_ClearBuffer(&u8g2);
-    u8g2_SetFont(&u8g2, u8g2_font_ncenB14_tr);
+    u8g2_SetFont(&u8g2, u8g2_font_ncenB10_tr);
     ets_printf("Finished display init\n");
 }
 

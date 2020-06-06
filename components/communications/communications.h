@@ -24,9 +24,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event);
 /**MQTT**/
 void initialize_mqtt_app();
 void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
-void publish_dht_handler(void *args);
-void publish_ldr_handler(void *args);
-void publish_window_handler(void *args);
+void publish_sensor_data_handler(void *args);
 void publish_control_data_handler(void *args);
 
 #endif /* COMMUNICATIONS */
