@@ -53,13 +53,13 @@ static void show_data_menu(){
 static void show_data(Sensor_data_menu sensor_data){
     //Current value
     char Text_Current[30];
-    sprintf(Text_Current, "Curr: %.2f", UserInterface.main_menu.data_menu.temp_menu.current);
+    sprintf(Text_Current, "Curr: %.2f", sensor_data.current);
     //Daily max value
     char Text_Daily[30];
-    sprintf(Text_Daily, "Day|Max: %.2f\nMin: %.2f", UserInterface.main_menu.data_menu.temp_menu.daily_max, UserInterface.main_menu.data_menu.temp_menu.daily_min);
+    sprintf(Text_Daily, "Day|Max: %.2f\nMin: %.2f", sensor_data.daily_max, sensor_data.daily_min);
     //Week max value
     char Text_Week[30];
-    sprintf(Text_Week, "Week|Max: %.2f\nMin: %.2f", UserInterface.main_menu.data_menu.temp_menu.week_max, UserInterface.main_menu.data_menu.temp_menu.week_min);
+    sprintf(Text_Week, "Week|Max: %.2f\nMin: %.2f", sensor_data.week_max, sensor_data.week_min);
     u8g2_DrawStr( &u8g2, NORTH, Text_Current);
     u8g2_DrawStr( &u8g2, CENTER, Text_Daily);
     u8g2_DrawStr( &u8g2, SOUTH, Text_Week);
