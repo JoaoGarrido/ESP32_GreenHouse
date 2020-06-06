@@ -102,13 +102,15 @@ void read_DHT(void *args){
     //Subscribe this task to TWDT, then check if it is subscribed
     //CHECK_ERROR_CODE(esp_task_wdt_add(NULL), ESP_OK);
     //CHECK_ERROR_CODE(esp_task_wdt_status(NULL), ESP_OK);
-
+    float humidity = 0.0, temperature = 0.0;
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
         ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
-        if (dht_read_float_data(sensor_type, GPIO_DHT, &(sensor_data.humidity), &(sensor_data.temperature)) == ESP_OK){
+        if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
             //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
             ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
+            sensor_data.temperature = temperature;
+            sensor_data.humidity = humidity;
         }
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }  

@@ -99,13 +99,13 @@ static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_me
 //Settings menu
 static void show_settings_menu(){
     char Text_list[1][30] = {" Mode"};
-    Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
+    Text_list[UserInterface.main_menu.settings_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
 }
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
-    Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
+    Text_list[UserInterface.main_menu.settings_menu.mode_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
     u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
 }
