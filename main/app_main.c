@@ -115,11 +115,11 @@ void app_main(){
     //Init
     init_sync_variables();
     initialize_wifi_sta_mode();
-    initialize_ports();
-    initialize_mqtt_app();
-    init_gui();
     init_display( 21, 22);
-    init_button_timer(10);
+    initialize_ports();
+    init_gui();
+    initialize_mqtt_app();
+    init_button_timer(5);
 
     //Application Tasks  
     xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);

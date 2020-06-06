@@ -24,7 +24,7 @@ Main_menu:
 **/
 
 /**Private Variables**/
-static u8g2_t u8g2;
+u8g2_t u8g2;
 
 #define NORTH 2,17
 #define CENTER 2, 32
@@ -157,11 +157,15 @@ void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
 	u8g2_esp32_hal.scl  = PIN_SCL;
 	u8g2_esp32_hal_init(u8g2_esp32_hal);
 	//init u8g2
-	u8g2_Setup_ssd1306_i2c_128x32_univision_f( &u8g2, U8G2_R0, u8g2_esp32_i2c_byte_cb, u8g2_esp32_gpio_and_delay_cb); 
+    ets_printf("Starting I2C setup\n");
+    u8g2_Setup_ssd1306_i2c_128x64_noname_f( &u8g2, U8G2_R0, u8g2_esp32_i2c_byte_cb, u8g2_esp32_gpio_and_delay_cb);
 	u8x8_SetI2CAddress( &u8g2.u8x8, 0x78);
+    u8g2_InitDisplay(&u8g2);
+    ets_printf("Finished I2C setup\n");
     u8g2_SetPowerSave(&u8g2, 0);
     u8g2_ClearBuffer(&u8g2);
     u8g2_SetFont(&u8g2, u8g2_font_ncenB14_tr);
+    ets_printf("Finished display init\n");
 }
 
 void update_display(void* args){
@@ -172,6 +176,6 @@ void update_display(void* args){
         update_menu();   
         //}
 	    u8g2_SendBuffer(&u8g2);
-        vTaskDelay(10);
+        vTaskDelay(10/portTICK_RATE_MS);
     }
 }
