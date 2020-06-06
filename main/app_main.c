@@ -24,10 +24,8 @@ void app_main();
 sensor_data_t sensor_data = {0.0, 0.0, 0, Window_state_Closed};
 control_data_t control_data = {45.0, 30.0, Window_action_Close, Mode_Auto};
 //Semaphores
-SemaphoreHandle_t publish_DHT_Signal = NULL;
-SemaphoreHandle_t publish_LDR_Signal = NULL;
-SemaphoreHandle_t publish_WindowState_Signal = NULL;
-SemaphoreHandle_t publish_Control_data_Signal = NULL;
+SemaphoreHandle_t publish_sensor_signal = NULL;
+SemaphoreHandle_t publish_control_signal = NULL;
 SemaphoreHandle_t read_DHT_Signal = NULL;
 SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
@@ -37,10 +35,8 @@ TaskHandle_t th_write_motor_state;
 
 //Init functions
 static void init_sync_variables(){
-    publish_DHT_Signal = xSemaphoreCreateBinary();
-    publish_LDR_Signal = xSemaphoreCreateBinary();
-    publish_WindowState_Signal = xSemaphoreCreateBinary();
-    publish_Control_data_Signal = xSemaphoreCreateBinary();
+    publish_sensor_signal = xSemaphoreCreateBinary();
+    publish_control_signal = xSemaphoreCreateBinary();
     read_DHT_Signal = xSemaphoreCreateBinary();
     read_LDR_Signal = xSemaphoreCreateBinary();
     x_Sem_C_Greenhouse = xSemaphoreCreateCounting(2, 0);
@@ -104,10 +100,8 @@ static void control_greenhouse(void *args){
             xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
         }
         //Trigger publish tasks on WiFi Core
-        xSemaphoreGive(publish_DHT_Signal);
-        xSemaphoreGive(publish_LDR_Signal);
-        xSemaphoreGive(publish_WindowState_Signal);
-        xSemaphoreGive(publish_Control_data_Signal);
+        xSemaphoreGive(publish_sensor_signal);
+        xSemaphoreGive(publish_control_signal);
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }
@@ -136,8 +130,6 @@ void app_main(){
     xTaskCreatePinnedToCore(update_display, "update_display", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
 
     //MQTT Tasks
-    xTaskCreatePinnedToCore(publish_dht_handler, "publish_dht_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_ldr_handler, "publish_ldr_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_window_handler, "publish_window_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
+    xTaskCreatePinnedToCore(publish_sensor_data_handler, "publish_sensor_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
 }
