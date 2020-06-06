@@ -24,8 +24,8 @@ static const char* temp_min_get_topic = "/GreenHouse/Temperature_MinLimit/get";
 static const char* window_get_topic = "/GreenHouse/Window/get";
 static const char* mode_get_topic = "/GreenHouse/Mode/get";
 //Subscribe
-static const char* temp_min_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
 static const char* temp_max_set_topic = "/GreenHouse/Temperature_MaxLimit/set";
+static const char* temp_min_set_topic = "/GreenHouse/Temperature_MinLimit/set";
 static const char* window_set_topic = "/GreenHouse/Window/set";
 static const char* mode_set_topic = "/GreenHouse/Mode/set";
 

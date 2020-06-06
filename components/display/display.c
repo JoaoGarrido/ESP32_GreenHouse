@@ -44,7 +44,7 @@ static void show_main_menu(){
 static void show_data_menu(){
     char Text_list[4][30] = {" Temperature", " Humidity", " Luminosity", " Other"};
     char Text_position[10];
-    sprintf("[%d/%d]", UserInterface.main_menu.data_menu.index, UserInterface.main_menu.data_menu.size);
+    sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.data_menu.index+1, UserInterface.main_menu.data_menu.size);
     //Text_list[UserInterface.main_menu.data_menu.index][0] = '*';
     u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.data_menu.index]);
     u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);

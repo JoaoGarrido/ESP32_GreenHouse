@@ -181,6 +181,7 @@ void init_gui(void *args){
     UserInterface.main_menu.data_menu.size = 4;
     UserInterface.main_menu.control_menu.size = 2;
     UserInterface.main_menu.settings_menu.size = 1;
+    UserInterface.main_menu.settings_menu.mode_menu.size = 1;
     //Other variables initialized to 0
 }
 
