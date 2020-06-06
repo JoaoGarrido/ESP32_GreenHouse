@@ -100,7 +100,7 @@ static void control_greenhouse(void *args){
             }
         }
         //Write Motor State
-        if((int)control_data.window_action != (int)sensor_data.window_state){
+        if(control_data.window_action != sensor_data.window_state){
             xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
         }
         //Trigger publish tasks on WiFi Core

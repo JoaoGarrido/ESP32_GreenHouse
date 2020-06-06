@@ -19,7 +19,7 @@ typedef struct {
     float humidity;
     float temperature;
     uint32_t luminosity;
-    Window_state window_state;
+    int window_state;
 } sensor_data_t;
 
 typedef enum _Window_action{Window_action_Open, Window_action_Close} Window_action;
@@ -27,7 +27,7 @@ typedef enum _Mode{Mode_Auto, Mode_Manual} Mode;
 typedef struct {
     float temperature_max;
     float temperature_min;
-    Window_action window_action;
+    int window_action;
     int mode;
 } control_data_t;
 

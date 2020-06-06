@@ -201,11 +201,3 @@ void write_motor_state(void *args){
         }
     }  
 }
-
-/*Display*/
-void write_display(void *args){
-    for(;;){
-        ESP_LOGI(display_tag,"Task running: %s", "write_display");
-        vTaskDelay(1000 / portTICK_RATE_MS);
-    }
-}

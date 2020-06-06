@@ -226,7 +226,7 @@ void publish_window_handler(void *args){
     for(;;){
         xSemaphoreTake(publish_WindowState_Signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_window_handler");
-        sprintf(buff, "%u", sensor_data.window_state);
+        sprintf(buff, "%d", sensor_data.window_state);
         esp_mqtt_client_publish(client_g, window_get_topic, buff, 0, 0, 0);
     }
 }
