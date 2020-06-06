@@ -17,6 +17,7 @@
 #define buttons_tag "[User Input]"
 #define motor_tag "[Motor Output]"
 #define display_tag "[Display]"
+#define stats_tag "[Stats]"
 
 //Watchdog timers and macro
 #define TWDT_TIMEOUT_S          3

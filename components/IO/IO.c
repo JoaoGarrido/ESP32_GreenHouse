@@ -178,7 +178,6 @@ void IRAM_ATTR timer_button_isr(void *args){
     
     //Re-enable interrupt
     TIMERG0.hw_timer[0].config.alarm_en = TIMER_ALARM_EN;
-    
 }
 
 /*Window*/
@@ -201,5 +200,15 @@ void write_display(void *args){
     for(;;){
         ESP_LOGI(display_tag,"Task running: %s", "write_display");
         vTaskDelay(1000 / portTICK_RATE_MS);
+    }
+}
+
+void write_stats(void *args) {
+    //ESP_LOGI(memory_tag, "***********************[APP] ESTA A EXECUTAR O FUCKING RUN TIME STATS ******************************************************");
+    for(;;) {
+        char str[500];
+        vTaskGetRunTimeStats(str);
+        ets_printf(str);
+        vTaskDelay(1000 / portTICK_RATE_MS);    
     }
 }

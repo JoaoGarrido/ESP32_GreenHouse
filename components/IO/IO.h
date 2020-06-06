@@ -29,5 +29,6 @@ void write_display(void *args);
 void read_DHT(void *args);
 void read_ldr(void *args);
 void IRAM_ATTR timer_button_isr(void *args);
+void write_stats(void *args); 
 
 #endif /* IO */
