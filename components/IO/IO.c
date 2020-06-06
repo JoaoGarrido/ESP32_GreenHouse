@@ -205,10 +205,12 @@ void write_motor_state(void *args){
 
 void write_stats(void *args) {
     //ESP_LOGI(memory_tag, "***********************[APP] ESTA A EXECUTAR O FUCKING RUN TIME STATS ******************************************************");
+    char str[500];
     for(;;) {
-        char str[500];
         vTaskGetRunTimeStats(str);
         ets_printf(str);
-        vTaskDelay(1000 / portTICK_RATE_MS);    
+        vTaskList(str);
+        ets_printf(str);
+        vTaskDelay(10000 / portTICK_RATE_MS);
     }
 }
