@@ -4,6 +4,7 @@
 #include "freertos/queue.h"
 #include "driver/timer.h"
 #include "driver/periph_ctrl.h"
+#include "freertos/queue.h"
 #include "esp_system.h"
 //Project libraries
 #include "logging.h"
@@ -30,8 +31,8 @@ SemaphoreHandle_t publish_Control_data_Signal = NULL;
 SemaphoreHandle_t read_DHT_Signal = NULL;
 SemaphoreHandle_t read_LDR_Signal = NULL;
 SemaphoreHandle_t x_Sem_C_Greenhouse = NULL;
+QueueHandle_t xButtonQueue = NULL;
 //Task Handlers
-TaskHandle_t th_button_handler;
 TaskHandle_t th_write_motor_state;
 
 //Init functions
@@ -43,6 +44,11 @@ static void init_sync_variables(){
     read_DHT_Signal = xSemaphoreCreateBinary();
     read_LDR_Signal = xSemaphoreCreateBinary();
     x_Sem_C_Greenhouse = xSemaphoreCreateCounting(2, 0);
+    const uint8_t BUTTON_QUEUE_LENGTH = 16;
+    xButtonQueue = xQueueCreate( BUTTON_QUEUE_LENGTH, sizeof(uint8_t));
+    if(xButtonQueue == NULL){
+        ets_printf("Couldn't init Button Queue\n");
+    }
 }
 
 static void init_button_timer(double timer_interval_msec){
@@ -123,7 +129,7 @@ void app_main(){
 
     //Application Tasks  
     xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, &th_button_handler, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);

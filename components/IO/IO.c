@@ -7,7 +7,7 @@ extern SemaphoreHandle_t read_DHT_Signal;
 extern SemaphoreHandle_t read_LDR_Signal;
 extern SemaphoreHandle_t x_Sem_C_Greenhouse;
 extern void button_handler(void *args);
-extern TaskHandle_t th_button_handler;
+extern QueueHandle_t xButtonQueue;
 
 /**Private variables**/
 static const gpio_num_t GPIO_BTN_UP = 26;
@@ -154,27 +154,31 @@ static uint32_t button_debounce(uint32_t button_name, uint64_t button_gpio){
 
 void IRAM_ATTR timer_button_isr(void *args){
     TIMERG0.hw_timer[0].update = 1;
-    
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    uint8_t button_to_queue;
     /*Queues vs xTaskNotifyFromISR:
-    With queues we can handle the button presses at the same time 
-    While if we use taskNotify and 2 buttons are pressed at exactly the same time, one of the presses will probably be ignored
-    This situation is highly improbable and xTaskNotify is faster and uses less RAM
+    With queues we can handle two button presses at the same time 
+    While if we use taskNotify and 2 buttons are pressed before the button handler ends, one of the presses will be ignored
     */
-    if(button_debounce((uint32_t)BTN_UP, (uint64_t)GPIO_BTN_UP)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_UP, eSetValueWithoutOverwrite, NULL);
+    if(button_debounce(BTN_UP, GPIO_BTN_UP)){
+        button_to_queue = BTN_UP;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
     }
     if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_DOWN, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_DOWN;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
     }
     if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_SELECT, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_SELECT;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
     }
     if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        xTaskNotifyFromISR(th_button_handler, (uint32_t)BTN_BACK, eSetValueWithoutOverwrite, NULL);
+        button_to_queue = BTN_BACK;
+        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
     }
     //Clear intr flag
-    TIMERG0.int_clr_timers.t0 = 1;
-    //timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //new ESP-IDF version
+    //TIMERG0.int_clr_timers.t0 = 1; //ESP-IDF 3.xx
+    timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //ESP-IDF version 4.xx
     
     //Re-enable interrupt
     TIMERG0.hw_timer[0].config.alarm_en = TIMER_ALARM_EN;

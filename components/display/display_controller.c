@@ -4,6 +4,7 @@
 extern UI UserInterface;
 extern control_data_t control_data;
 extern sensor_data_t sensor_data;
+extern QueueHandle_t xButtonQueue;
 
 /**Private Functions**/
 static void main_menu_handler(uint32_t current_button){
@@ -191,10 +192,10 @@ void refresh_data(){
 }
 
 void button_handler(void *args){
-    uint32_t current_button = 0;
+    uint8_t current_button = 0;
     for(;;){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
-        xTaskNotifyWait(0x00, 0xffffffff, &current_button, portMAX_DELAY);
+        xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);
         ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
         ets_printf("%u\n\n", UserInterface.current_menu);
         switch(UserInterface.current_menu){
