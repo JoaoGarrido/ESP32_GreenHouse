@@ -63,7 +63,8 @@ static void init_button_timer(double timer_interval_msec){
     timer_set_counter_value(TIMER_GROUP_0, TIMER_0, 0x00000000ULL);
 
     /* Configure the alarm value and the interrupt on alarm. */
-    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, timer_interval_msec * TIMER_SCALE);
+    double timer_interval_sec = timer_interval_msec/1000;
+    timer_set_alarm_value(TIMER_GROUP_0, TIMER_0, timer_interval_sec*TIMER_SCALE);
     timer_enable_intr(TIMER_GROUP_0, TIMER_0);
     timer_isr_register(TIMER_GROUP_0, TIMER_0, timer_button_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
     timer_start(TIMER_GROUP_0, TIMER_0);
@@ -74,6 +75,7 @@ static void init_button_timer(double timer_interval_msec){
 static void control_greenhouse(void *args){
     for(;;){
         ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
+        gpio_set_level(12, 1);
         //Trigger read tasks
         xSemaphoreGive(read_DHT_Signal);
         xSemaphoreGive(read_LDR_Signal);
@@ -102,6 +104,7 @@ static void control_greenhouse(void *args){
         //Trigger publish tasks on WiFi Core
         xSemaphoreGive(publish_sensor_signal);
         xSemaphoreGive(publish_control_signal);
+        gpio_set_level(12, 0);
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
 }
@@ -119,18 +122,18 @@ void app_main(){
     initialize_ports();
     init_gui();
     initialize_mqtt_app();
-    init_button_timer(5);
+    init_button_timer(30.0);
 
     //Application Tasks  
-    xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 11, &th_write_motor_state, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 10, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(write_motor_state, "write_motor_state", TASK_STACK_MIN_SIZE, NULL, 9, &th_write_motor_state, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(button_handler, "button_handler", TASK_STACK_MIN_SIZE, NULL, 8, NULL, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(control_greenhouse, "control_greenhouse", TASK_STACK_MIN_SIZE, NULL, 7, NULL, APPLICATION_CORE);
+    xTaskCreatePinnedToCore(read_DHT, "read_DHT", TASK_STACK_MIN_SIZE, NULL, 6, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(read_ldr, "read_ldr", TASK_STACK_MIN_SIZE, NULL, 5, NULL, APPLICATION_CORE);
     xTaskCreatePinnedToCore(update_display, "update_display", TASK_STACK_MIN_SIZE, NULL, 4, NULL, APPLICATION_CORE);
-    xTaskCreatePinnedToCore(write_stats, "write_stats", TASK_STACK_MIN_SIZE, NULL, 3, NULL, APPLICATION_CORE);
+    //xTaskCreatePinnedToCore(write_stats, "write_stats", TASK_STACK_MIN_SIZE, NULL, 3, NULL, APPLICATION_CORE);
 
     //MQTT Tasks
+    xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 2, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_sensor_data_handler, "publish_sensor_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
-    xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);
 }

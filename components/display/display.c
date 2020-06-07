@@ -175,9 +175,11 @@ void update_display(void* args){
         refresh_data();
         //if(UserInterface.current_menu != previous_menu){
         u8g2_ClearBuffer(&u8g2);
-        update_menu();   
+        update_menu();
         //}
+        gpio_set_level(14, 1);
 	    u8g2_SendBuffer(&u8g2);
-        vTaskDelay(10/portTICK_RATE_MS);
+        gpio_set_level(14, 0);
+        vTaskDelay(1/portTICK_RATE_MS);
     }
 }

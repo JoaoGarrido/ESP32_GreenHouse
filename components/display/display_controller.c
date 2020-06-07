@@ -198,7 +198,8 @@ void button_handler(void *args){
     uint8_t current_button = 0;
     for(;;){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
-        xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);
+        xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);                
+        gpio_set_level(4, 1);
         ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
         ets_printf("%u\n\n", UserInterface.current_menu);
         switch(UserInterface.current_menu){
@@ -230,5 +231,6 @@ void button_handler(void *args){
             default:
                 break;
         }
+        gpio_set_level(4, 0);
     }
 }

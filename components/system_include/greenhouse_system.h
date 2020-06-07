@@ -10,7 +10,7 @@
 
 //Timer
 #define TIMER_DIVIDER         16  //  Hardware timer clock divider
-#define TIMER_SCALE           (TIMER_BASE_CLK / (TIMER_DIVIDER*100))  // convert counter value to seconds
+#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
 typedef enum _Buttons{NONE, BTN_SELECT=0, BTN_BACK=1, BTN_UP=2, BTN_DOWN=3} Buttons;
 
