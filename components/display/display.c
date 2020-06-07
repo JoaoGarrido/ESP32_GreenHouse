@@ -34,10 +34,10 @@ u8g2_t u8g2;
 //Main menu
 static void show_main_menu(){
     char Text_list[3][30] = {" Data", " Control", " Settings"};
-    Text_list[UserInterface.main_menu.index][0] = '*';
-    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
-    u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
-    u8g2_DrawStr( &u8g2, SOUTH, Text_list[2]);
+    char Text_position[10];
+    sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.index+1, UserInterface.main_menu.size);
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.index]);
+    u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);
 }
 
 //Data menu
@@ -73,15 +73,17 @@ static void show_data_other(){
 static void show_control_menu(){
     if(UserInterface.main_menu.settings_menu.mode_menu.current_mode == Auto_Mode){
         char Text_list[2][30] = {" Max Temperature Limit", " Min Temperature Limit"};
-        Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-        u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
-        u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
+        char Text_position[10];
+        sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.control_menu.index+1, UserInterface.main_menu.control_menu.size);
+        u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.control_menu.index]);
+        u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);
     }
     else{
         char Text_list[2][30] = {" Open", " Close"};
-        Text_list[UserInterface.main_menu.control_menu.index][0] = '*';
-        u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
-        u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
+        char Text_position[10];
+        sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.control_menu.index+1, UserInterface.main_menu.control_menu.size);
+        u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.control_menu.index]);
+        u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);
     }
 }
 
@@ -99,15 +101,17 @@ static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_me
 //Settings menu
 static void show_settings_menu(){
     char Text_list[1][30] = {" Mode"};
-    Text_list[UserInterface.main_menu.settings_menu.index][0] = '*';
-    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
-}
+    char Text_position[10];
+    sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.settings_menu.index+1, UserInterface.main_menu.settings_menu.size);
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.settings_menu.index]);
+    u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);}
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
-    Text_list[UserInterface.main_menu.settings_menu.mode_menu.index][0] = '*';
-    u8g2_DrawStr( &u8g2, NORTH, Text_list[0]);
-    u8g2_DrawStr( &u8g2, CENTER, Text_list[1]);
+    char Text_position[10];
+    sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.settings_menu.mode_menu.index+1, UserInterface.main_menu.settings_menu.mode_menu.size);
+    u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.settings_menu.mode_menu.index]);
+    u8g2_DrawStr( &u8g2, SOUTH_EAST, Text_position);
 }
 
 //Update GUI state
