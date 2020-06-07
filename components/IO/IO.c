@@ -24,6 +24,8 @@ static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
 static const gpio_num_t GPIO_DHT = 5;
 //Window
 static const gpio_num_t GPIO_WINDOW = 27;
+//For task time test
+static const gpio_num_t GPIO_TEST = 39;
 
 /**Static functions**/
 static void check_efuse(void);
@@ -95,6 +97,16 @@ void initialize_ports(){
         .pull_up_en = 0,
     };
     gpio_config(&window_config);
+
+    const uint64_t GPIO_TEST_MASK = (1ULL << GPIO_TEST);
+    gpio_config_t test_config = {
+        .pin_bit_mask = GPIO_TEST_MASK,
+        .intr_type = GPIO_PIN_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = 0,
+        .pull_up_en = 0,
+    };
+    gpio_config(&test_config);
 }
 
 /*DHT*/
@@ -105,6 +117,8 @@ void read_DHT(void *args){
     float humidity = 0.0, temperature = 0.0;
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
+        //gpio_set_level(GPIO_TEST, 1);
+
         ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
         if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
             //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
@@ -112,6 +126,8 @@ void read_DHT(void *args){
             sensor_data.temperature = temperature;
             sensor_data.humidity = humidity;
         }
+
+        //gpio_set_level(GPIO_TEST, 0);
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
 }   
@@ -120,6 +136,8 @@ void read_DHT(void *args){
 void read_ldr(void *args) {
     for(;;){
         xSemaphoreTake(read_LDR_Signal, portMAX_DELAY);
+        //gpio_set_level(GPIO_TEST, 1);
+
         ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
         uint32_t adc_reading = 0;
         //Multisampling
@@ -133,6 +151,8 @@ void read_ldr(void *args) {
         ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\n", channel, adc_reading);
         //NEED TO: CONVERT TO LUMENS OR %
         sensor_data.luminosity = adc_reading;
+
+        //gpio_set_level(GPIO_TEST, 0);
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
@@ -189,6 +209,8 @@ void IRAM_ATTR timer_button_isr(void *args){
 /*Window*/
 void write_motor_state(void *args){
     for(;;){
+        //gpio_set_level(GPIO_TEST, 1);
+
         uint32_t output_level = 3;
         sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
         xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
@@ -196,9 +218,11 @@ void write_motor_state(void *args){
         ets_printf("%d", output_level);
         if(output_level < 3){            
             gpio_set_level(GPIO_WINDOW, output_level);
+            //gpio_set_level(GPIO_TEST, 0);
         }
         else{
             ESP_LOGI(motor_tag,"ERROR invalid output level");
+            //gpio_set_level(GPIO_TEST, 0);
         }
     }  
 }
