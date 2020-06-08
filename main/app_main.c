@@ -74,7 +74,7 @@ static void init_button_timer(double timer_interval_msec){
 //Loop task functions
 static void control_greenhouse(void *args){
     for(;;){
-        debug_gpio(GPIO_CHANNEL_1,
+        DEBUG_GPIO(GPIO_CHANNEL_1,
             ESP_LOGI(task_logging,"Task running: %s", "control_greenhouse");
             //Trigger read tasks
             xSemaphoreGive(read_DHT_Signal);
@@ -134,7 +134,7 @@ void app_main(){
     #if CONFIG_RUN_WRITE_STATS
     xTaskCreatePinnedToCore(write_stats, "write_stats", TASK_STACK_MIN_SIZE, NULL, 3, NULL, APPLICATION_CORE);
     #endif
-    
+
     //MQTT Tasks
     xTaskCreatePinnedToCore(publish_control_data_handler, "publish_control_data_handler", TASK_STACK_MIN_SIZE, NULL, 2, NULL, WIFI_COMMUNICATIONS_CORE);
     xTaskCreatePinnedToCore(publish_sensor_data_handler, "publish_sensor_data_handler", TASK_STACK_MIN_SIZE, NULL, 1, NULL, WIFI_COMMUNICATIONS_CORE);

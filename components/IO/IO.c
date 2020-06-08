@@ -117,7 +117,7 @@ void read_DHT(void *args){
     float humidity = 0.0, temperature = 0.0;
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
-        debug_gpio(GPIO_CHANNEL_2,
+        DEBUG_GPIO(GPIO_CHANNEL_2,
             ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
             if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
                 //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
@@ -134,7 +134,7 @@ void read_DHT(void *args){
 void read_ldr(void *args) {
     for(;;){
         xSemaphoreTake(read_LDR_Signal, portMAX_DELAY);
-        debug_gpio(GPIO_CHANNEL_3,
+        DEBUG_GPIO(GPIO_CHANNEL_3,
             ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
             uint32_t adc_reading = 0;
             //Multisampling
@@ -178,7 +178,7 @@ void IRAM_ATTR timer_button_isr(void *args){
     With queues we can handle two button presses at the same time 
     While if we use taskNotify and 2 buttons are pressed before the button handler ends, one of the presses will be ignored
     */
-    debug_gpio(GPIO_CHANNEL_5,
+    DEBUG_GPIO(GPIO_CHANNEL_5,
         if(button_debounce(BTN_UP, GPIO_BTN_UP)){
             button_to_queue = BTN_UP;
             xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
@@ -212,7 +212,7 @@ void write_motor_state(void *args){
         uint32_t output_level = 3;
         sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
         xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
-        debug_gpio(GPIO_CHANNEL_4,
+        DEBUG_GPIO(GPIO_CHANNEL_4,
             ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
             ets_printf("%d", output_level);
             if(output_level < 3){            

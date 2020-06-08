@@ -177,7 +177,7 @@ void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
 
 void update_display(void* args){
     for(;;){
-        debug_gpio(GPIO_CHANNEL_0,
+        DEBUG_GPIO(GPIO_CHANNEL_0,
             refresh_data();
             u8g2_ClearBuffer(&u8g2);
             update_menu();

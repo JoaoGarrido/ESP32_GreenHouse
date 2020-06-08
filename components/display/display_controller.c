@@ -199,7 +199,7 @@ void button_handler(void *args){
     for(;;){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
         xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);                
-        debug_gpio(GPIO_CHANNEL_5,
+        DEBUG_GPIO(GPIO_CHANNEL_5,
             ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
             ets_printf("%u\n\n", UserInterface.current_menu);
             switch(UserInterface.current_menu){
