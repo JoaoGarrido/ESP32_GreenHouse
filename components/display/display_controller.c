@@ -199,38 +199,38 @@ void button_handler(void *args){
     for(;;){
         ESP_LOGI(buttons_tag, "Task running: %s", "button_handler blocked");
         xQueueReceive( xButtonQueue, &current_button, portMAX_DELAY);                
-        gpio_set_level(4, 1);
-        ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
-        ets_printf("%u\n\n", UserInterface.current_menu);
-        switch(UserInterface.current_menu){
-            case MAIN_MENU:
-                main_menu_handler(current_button);
-                break;
-            case DATA_MENU:
-                data_menu_handler(current_button);
-                break;
-            case CONTROL_MENU:
-                control_menu_handler(current_button);
-                break;
-            case SETTINGS_MENU:
-                settings_menu_handler(current_button);
-                break;
-            case DATA_TEMP_MENU:
-            case DATA_HUMID_MENU:
-            case DATA_LUMI_MENU:
-            case DATA_OTHER_MENU:
-                data_show_menu_handler(current_button);
-                break;
-            case CONTROL_TEMP_MAX_MENU:
-            case CONTROL_TEMP_MIN_MENU:
-                control_temp_menu_handler(current_button);
-                break;
-            case SETTINGS_MODE_MENU:
-                settings_mode_menu_handler(current_button);
-                break;
-            default:
-                break;
-        }
-        gpio_set_level(4, 0);
+        debug_gpio(GPIO_CHANNEL_5,
+            ESP_LOGI(buttons_tag,"Task running: %s%d", "button_handler unblocked from button ", current_button);
+            ets_printf("%u\n\n", UserInterface.current_menu);
+            switch(UserInterface.current_menu){
+                case MAIN_MENU:
+                    main_menu_handler(current_button);
+                    break;
+                case DATA_MENU:
+                    data_menu_handler(current_button);
+                    break;
+                case CONTROL_MENU:
+                    control_menu_handler(current_button);
+                    break;
+                case SETTINGS_MENU:
+                    settings_menu_handler(current_button);
+                    break;
+                case DATA_TEMP_MENU:
+                case DATA_HUMID_MENU:
+                case DATA_LUMI_MENU:
+                case DATA_OTHER_MENU:
+                    data_show_menu_handler(current_button);
+                    break;
+                case CONTROL_TEMP_MAX_MENU:
+                case CONTROL_TEMP_MIN_MENU:
+                    control_temp_menu_handler(current_button);
+                    break;
+                case SETTINGS_MODE_MENU:
+                    settings_mode_menu_handler(current_button);
+                    break;
+                default:
+                    break;
+            }
+        )
     }
 }

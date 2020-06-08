@@ -72,7 +72,7 @@ static void show_data_other(){
 //Control menu
 static void show_control_menu(){
     if(UserInterface.main_menu.settings_menu.mode_menu.current_mode == Auto_Mode){
-        char Text_list[2][30] = {" Max Temperature Limit", " Min Temperature Limit"};
+        char Text_list[2][30] = {" Max Temp Limit", " Min Temp Limit"};
         char Text_position[10];
         sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.control_menu.index+1, UserInterface.main_menu.control_menu.size);
         u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.control_menu.index]);
@@ -88,7 +88,7 @@ static void show_control_menu(){
 }
 
 static void show_control_temp_limit(const char temp_limit_type[5], Temp_limit_menu temp_limit_menu){
-    char Text_limit[30] = "    Temperature";
+    char Text_limit[30] = "    Temp";
     for(int i = 0; i < 3; i++){
         Text_limit[i] = temp_limit_type[i];
     }
@@ -108,6 +108,7 @@ static void show_settings_menu(){
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
+    Text_list[UserInterface.main_menu.settings_menu.mode_menu.current_mode][0] = 0;
     char Text_position[10];
     sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.settings_menu.mode_menu.index+1, UserInterface.main_menu.settings_menu.mode_menu.size);
     u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.settings_menu.mode_menu.index]);
@@ -176,14 +177,12 @@ void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
 
 void update_display(void* args){
     for(;;){
-        refresh_data();
-        //if(UserInterface.current_menu != previous_menu){
-        u8g2_ClearBuffer(&u8g2);
-        update_menu();
-        //}
-        gpio_set_level(14, 1);
-	    u8g2_SendBuffer(&u8g2);
-        gpio_set_level(14, 0);
+        debug_gpio(GPIO_CHANNEL_0,
+            refresh_data();
+            u8g2_ClearBuffer(&u8g2);
+            update_menu();
+            u8g2_SendBuffer(&u8g2);
+        );
         vTaskDelay(1/portTICK_RATE_MS);
     }
 }

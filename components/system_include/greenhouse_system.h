@@ -2,6 +2,7 @@
 #define GREENHOUSE_SYSTEM
 
 #include <stdint.h>
+#include "debugging.h"
 
 //OS
 #define WIFI_COMMUNICATIONS_CORE 0

@@ -1,6 +1,7 @@
 #ifndef DISPLAY
 #define DISPLAY
 
+#include "greenhouse_system.h"
 #include "u8g2_esp32_hal.h"
 #include "../u8g2/csrc/u8g2.h"
 #include "freertos/FreeRTOS.h"

@@ -117,17 +117,15 @@ void read_DHT(void *args){
     float humidity = 0.0, temperature = 0.0;
     for(;;){
         xSemaphoreTake(read_DHT_Signal, portMAX_DELAY);
-        gpio_set_level(13, 1);
-
-        ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
-        if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
-            //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
-            ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
-            sensor_data.temperature = temperature;
-            sensor_data.humidity = humidity;
-        }
-
-        gpio_set_level(13, 0);
+        debug_gpio(GPIO_CHANNEL_2,
+            ESP_LOGI(dht_tag,"Task running: %s", "read_DHT");
+            if (dht_read_float_data(sensor_type, GPIO_DHT, &humidity, &temperature) == ESP_OK){
+                //CHECK_ERROR_CODE(esp_task_wdt_reset(), ESP_OK);
+                ESP_LOGI(dht_tag,"Temperature: %fºC || Humidity %f%%", sensor_data.temperature, sensor_data.humidity);
+                sensor_data.temperature = temperature;
+                sensor_data.humidity = humidity;
+            }
+        )
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }  
 }   
@@ -136,23 +134,21 @@ void read_DHT(void *args){
 void read_ldr(void *args) {
     for(;;){
         xSemaphoreTake(read_LDR_Signal, portMAX_DELAY);
-        gpio_set_level(2, 1);
-
-        ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
-        uint32_t adc_reading = 0;
-        //Multisampling
-        for (int i = 0; i < NO_OF_SAMPLES; i++){
-            adc_reading += adc1_get_raw((adc1_channel_t)channel);
-        }
-        adc_reading /= NO_OF_SAMPLES;
-        //Convert adc_reading to voltage in mV
-        uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
-        //ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
-        ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\n", channel, adc_reading);
-        //NEED TO: CONVERT TO LUMENS OR %
-        sensor_data.luminosity = adc_reading;
-        gpio_set_level(2, 0);
-        //gpio_set_level(GPIO_TEST, 0);
+        debug_gpio(GPIO_CHANNEL_3,
+            ESP_LOGI(ldr_tag,"Task running: %s", "read_ldr");
+            uint32_t adc_reading = 0;
+            //Multisampling
+            for (int i = 0; i < NO_OF_SAMPLES; i++){
+                adc_reading += adc1_get_raw((adc1_channel_t)channel);
+            }
+            adc_reading /= NO_OF_SAMPLES;
+            //Convert adc_reading to voltage in mV
+            uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
+            //ESP_LOGI(ldr_tag, "Raw: %d\tVoltage: %dmV\n", adc_reading, voltage);
+            ESP_LOGI(ldr_tag, "ADC1 CH%d Raw: %d\n", channel, adc_reading);
+            //NEED TO: CONVERT TO LUMENS OR %
+            sensor_data.luminosity = adc_reading;
+        )
         xSemaphoreGive(x_Sem_C_Greenhouse);
     }
 }
@@ -182,26 +178,26 @@ void IRAM_ATTR timer_button_isr(void *args){
     With queues we can handle two button presses at the same time 
     While if we use taskNotify and 2 buttons are pressed before the button handler ends, one of the presses will be ignored
     */
-    gpio_set_level(4, 1);
-    if(button_debounce(BTN_UP, GPIO_BTN_UP)){
-        button_to_queue = BTN_UP;
-        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
-        //gpio_set_level(GPIO_TEST, 1);
-    }
-    if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
-        button_to_queue = BTN_DOWN;
-        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
-    }
-    if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
-        button_to_queue = BTN_SELECT;
-        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
-        gpio_set_level(4, 0);
-    }
-    if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
-        button_to_queue = BTN_BACK;
-        xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
-    }
-    gpio_set_level(4, 0);
+    debug_gpio(GPIO_CHANNEL_5,
+        if(button_debounce(BTN_UP, GPIO_BTN_UP)){
+            button_to_queue = BTN_UP;
+            xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
+            //gpio_set_level(GPIO_TEST, 1);
+        }
+        if(button_debounce(BTN_DOWN, GPIO_BTN_DOWN)){
+            button_to_queue = BTN_DOWN;
+            xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
+        }
+        if(button_debounce(BTN_SELECT, GPIO_BTN_SEL)){
+            button_to_queue = BTN_SELECT;
+            xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);    
+            gpio_set_level(4, 0);
+        }
+        if(button_debounce(BTN_BACK, GPIO_BTN_BACK)){
+            button_to_queue = BTN_BACK;
+            xQueueSendFromISR( xButtonQueue, &button_to_queue, &xHigherPriorityTaskWoken);
+        }
+    )
     //Clear intr flag
     //TIMERG0.int_clr_timers.t0 = 1; //ESP-IDF 3.xx
     timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0); //ESP-IDF version 4.xx
@@ -216,18 +212,18 @@ void write_motor_state(void *args){
         uint32_t output_level = 3;
         sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
         xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
-        gpio_set_level(15, 1);
-        ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
-        ets_printf("%d", output_level);
-        if(output_level < 3){            
-            gpio_set_level(GPIO_WINDOW, output_level);
-            //gpio_set_level(GPIO_TEST, 0);
-        }
-        else{
-            ESP_LOGI(motor_tag,"ERROR invalid output level");
-            //gpio_set_level(GPIO_TEST, 0);
-        }
-        gpio_set_level(15, 0);
+        debug_gpio(GPIO_CHANNEL_4,
+            ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
+            ets_printf("%d", output_level);
+            if(output_level < 3){            
+                gpio_set_level(GPIO_WINDOW, output_level);
+                //gpio_set_level(GPIO_TEST, 0);
+            }
+            else{
+                ESP_LOGI(motor_tag,"ERROR invalid output level");
+                //gpio_set_level(GPIO_TEST, 0);
+            }
+        )
     }  
 }
 
