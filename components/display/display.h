@@ -62,6 +62,7 @@ typedef struct {
     uint8_t size;
     Temp_limit_menu temp_max_menu;
     Temp_limit_menu temp_min_menu;
+    uint8_t current_window_state;
 } Control_menu;
 
 //Main_menu

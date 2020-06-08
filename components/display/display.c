@@ -80,6 +80,7 @@ static void show_control_menu(){
     }
     else{
         char Text_list[2][30] = {" Open", " Close"};
+        Text_list[UserInterface.main_menu.control_menu.current_window_state][0] = '*';
         char Text_position[10];
         sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.control_menu.index+1, UserInterface.main_menu.control_menu.size);
         u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.control_menu.index]);
@@ -108,7 +109,7 @@ static void show_settings_menu(){
 
 static void show_settings_mode(){
     char Text_list[2][30] = {" Auto Mode", " Manual Mode"};
-    Text_list[UserInterface.main_menu.settings_menu.mode_menu.current_mode][0] = 0;
+    Text_list[UserInterface.main_menu.settings_menu.mode_menu.current_mode][0] = '*';
     char Text_position[10];
     sprintf( Text_position, "[%d/%d]", UserInterface.main_menu.settings_menu.mode_menu.index+1, UserInterface.main_menu.settings_menu.mode_menu.size);
     u8g2_DrawStr( &u8g2, CENTER, Text_list[UserInterface.main_menu.settings_menu.mode_menu.index]);

@@ -105,7 +105,7 @@ static void settings_menu_handler(uint32_t current_button){
             UserInterface.main_menu.settings_menu.index = (UserInterface.main_menu.settings_menu.index + 1)%UserInterface.main_menu.settings_menu.size;
             break;
         case BTN_SELECT:
-            if(UserInterface.main_menu.control_menu.index == 0){
+            if(UserInterface.main_menu.settings_menu.index == 0){
                 UserInterface.current_menu = SETTINGS_MODE_MENU; 
             }
             break;
@@ -192,6 +192,7 @@ void refresh_data(){
     UserInterface.main_menu.data_menu.humid_menu.current = sensor_data.humidity;
     UserInterface.main_menu.data_menu.lumi_menu.current = sensor_data.luminosity;
     UserInterface.main_menu.settings_menu.mode_menu.current_mode = control_data.mode;
+    UserInterface.main_menu.control_menu.current_window_state = control_data.window_action;
 }
 
 void button_handler(void *args){
