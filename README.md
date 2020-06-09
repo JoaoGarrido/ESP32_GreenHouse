@@ -20,6 +20,6 @@ Allows local and remote monitorization and control of a small greenhouse
 
 # Authors
 
-[João Garrido](https://github.com/JoaoGarrido)
-[Emanuel Castro](https://github.com/EmanCastro)
-[Miguel Macedo](https://github.com/MiguelMMacedo)
+* [João Garrido](https://github.com/JoaoGarrido)
+* [Emanuel Castro](https://github.com/EmanCastro)
+* [Miguel Macedo](https://github.com/MiguelMMacedo)
