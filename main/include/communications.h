@@ -10,7 +10,6 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 //Project libraries
-#include "logging.h"
 #include "greenhouse_system.h"
 
 #define WIFI_SSID "GarridoNOS"

@@ -1,1 +1,0 @@
-idf_component_register(SRCS "communications.c" INCLUDE_DIRS "." REQUIRES mqtt nvs_flash PRIV_REQUIRES system_include)

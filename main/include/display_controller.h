@@ -3,7 +3,6 @@
 
 #include "display.h"
 #include "greenhouse_system.h"
-#include "logging.h"
 
 void init_gui();
 void button_handler(void *args);

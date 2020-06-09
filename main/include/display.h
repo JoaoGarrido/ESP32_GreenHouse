@@ -8,7 +8,6 @@
 #include "freertos/task.h"
 
 enum All_Menu{
-    
     MAIN_MENU, 
     DATA_MENU, CONTROL_MENU, SETTINGS_MENU, 
     DATA_TEMP_MENU, DATA_HUMID_MENU, DATA_LUMI_MENU, DATA_OTHER_MENU, 

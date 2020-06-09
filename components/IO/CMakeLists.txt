@@ -1,1 +1,0 @@
-idf_component_register(SRCS "IO.c" "dht.c" INCLUDE_DIRS "." REQUIRES esp_adc_cal PRIV_REQUIRES system_include)

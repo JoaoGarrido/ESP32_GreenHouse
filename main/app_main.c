@@ -7,7 +7,6 @@
 #include "freertos/queue.h"
 #include "esp_system.h"
 //Project libraries
-#include "logging.h"
 #include "communications.h"
 #include "greenhouse_system.h"
 #include "IO.h"

@@ -1,1 +1,0 @@
-idf_component_register(SRCS "greenhouse_system.c" "logging.c" "debugging.c" INCLUDE_DIRS ".")

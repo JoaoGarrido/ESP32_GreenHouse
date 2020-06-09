@@ -1,1 +1,0 @@
-idf_component_register(SRCS "display.c" "display_controller.c" "u8g2_esp32_hal.c" INCLUDE_DIRS "." PRIV_REQUIRES system_include u8g2)
