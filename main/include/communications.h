@@ -12,8 +12,8 @@
 //Project libraries
 #include "greenhouse_system.h"
 
-#define WIFI_SSID "GarridoNOS"
-#define WIFI_PASS "Mira32Mira32"
+#define WIFI_SSID ""
+#define WIFI_PASS ""
 
 /**Wifi**/
 //Functions
