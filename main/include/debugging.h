@@ -1,13 +1,12 @@
 #ifndef DEBUGGING
 #define DEBUGGING
 
-#define CONFIG_USE_DEBUG 0 
-/*
-0->No debugging(release)
-1->Logging
-2->GPIO
-3->Both
-*/
+enum debug{
+    No_debug = 0,
+    Logging_debug,
+    GPIO_debug,
+    All_debug
+};
 
 //System libraries
 #include "esp_log.h"

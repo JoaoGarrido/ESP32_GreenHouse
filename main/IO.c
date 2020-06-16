@@ -20,7 +20,7 @@ static const adc_channel_t channel = ADC_CHANNEL_0;   //GPIO36
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static const adc_atten_t atten = ADC_ATTEN_DB_0;
 //DHT variables
-static const dht_sensor_type_t sensor_type = DHT_TYPE_AM2301;
+static const dht_sensor_type_t sensor_type = CONFIG_TEMP_HUMID_SENSOR;
 static const gpio_num_t GPIO_DHT = 5;
 //Window
 static const gpio_num_t GPIO_WINDOW = 27;

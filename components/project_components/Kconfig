@@ -1,0 +1,46 @@
+menu "Project manager"
+
+config USE_DEBUG
+    int
+    default 0 if No_debug
+    default 1 if Logging_debug
+    default 2 if GPIO_debug
+    default 3 if All_debug
+
+    choice
+        prompt "Choose debug level"
+        default No_debug
+
+        config No_debug
+            bool "No debug"
+
+        config Logging_debug
+            bool "Logging only"
+
+        config GPIO_debug
+            bool "GPIO only"
+        
+        config All_debug
+            bool "All debug"
+    endchoice
+
+config TEMP_HUMID_SENSOR
+    int
+    default 0 if DHT_TYPE_DHT11
+    default 1 if DHT_TYPE_AM2301
+    default 2 if DHT_TYPE_SI7021
+    choice
+        prompt "Choose temperature and humidity sensor"
+        default DHT_TYPE_DHT11
+
+        config DHT_TYPE_DHT11
+            bool "DHT11"
+
+        config DHT_TYPE_AM2301
+            bool "DHT22"
+        
+        config DHT_TYPE_SI7021
+            bool "SI7021"
+    endchoice
+
+endmenu
