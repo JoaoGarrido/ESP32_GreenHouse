@@ -1,12 +1,15 @@
 #ifndef DISPLAY
 #define DISPLAY
 
+/*System libraries*/
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+/*Project libraries*/
 #include "greenhouse_system.h"
 #include "u8g2_esp32_hal.h"
 #include "../u8g2/csrc/u8g2.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 
+/*Definitions*/
 enum All_Menu{
     MAIN_MENU, 
     DATA_MENU, CONTROL_MENU, SETTINGS_MENU, 
@@ -78,6 +81,7 @@ typedef struct _UI{
     uint8_t current_menu;
 } UI;
 
+/*Functions*/
 void init_display(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL);
 void update_display(void *args);
 

@@ -1,7 +1,7 @@
 #ifndef IO
 #define IO
 
-//System libraries
+/*System libraries*/
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
 #include "driver/gpio.h"
@@ -10,18 +10,18 @@
 #include "freertos/semphr.h"
 #include "driver/timer.h"
 #include "driver/periph_ctrl.h"
-//Project libraries
+/*Project libraries*/
 #include "greenhouse_system.h"
 #include "dht.h"
 
-/*Struct defintions*/
+/*Definitions*/
 //Buttons
 #define N_BUTTONS 4
 //ADC
 #define DEFAULT_VREF    1100
 #define NO_OF_SAMPLES   64          //Multisampling
 
-/*Public Functions*/
+/*Functions*/
 void initialize_ports();
 void write_motor_state(void *args);
 void write_display(void *args);

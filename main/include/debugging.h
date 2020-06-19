@@ -1,6 +1,12 @@
 #ifndef DEBUGGING
 #define DEBUGGING
 
+/*System libraries*/
+#include "esp_log.h"
+#include "esp_task_wdt.h"
+
+/*Definitions*/
+//Debugging
 enum debug{
     No_debug = 0,
     Logging_debug,
@@ -8,11 +14,8 @@ enum debug{
     All_debug
 };
 
-//System libraries
-#include "esp_log.h"
-#include "esp_task_wdt.h"
+enum ENUM_DEBUG_GPIO{GPIO_CHANNEL_0=14, GPIO_CHANNEL_1=12, GPIO_CHANNEL_2=13, GPIO_CHANNEL_3=2, GPIO_CHANNEL_4=15 , GPIO_CHANNEL_5=4};
 
-//Debug
 #if CONFIG_USE_DEBUG >= 2
 #define DEBUG_GPIO(GPIO_PIN, CODE) \
     do{ \
@@ -26,9 +29,6 @@ enum debug{
         CODE\
     }while(0);
 #endif
-
-enum ENUM_DEBUG_GPIO{GPIO_CHANNEL_0=14, GPIO_CHANNEL_1=12, GPIO_CHANNEL_2=13, GPIO_CHANNEL_3=2, GPIO_CHANNEL_4=15 , GPIO_CHANNEL_5=4};
-
 
 //Logging
 #define startup_tag "[Startup]"

@@ -1,4 +1,4 @@
-//System libraries
+/*System libraries*/
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -6,17 +6,19 @@
 #include "driver/periph_ctrl.h"
 #include "freertos/queue.h"
 #include "esp_system.h"
-//Project libraries
+/*Project libraries*/
 #include "communications.h"
 #include "greenhouse_system.h"
 #include "IO.h"
 #include "display_controller.h"
 #include "display.h"
-//Header
+/*Functions*/
+//Public
+void app_main();
+//Private
 static void init_sync_variables();
 static void init_button_timer(double timer_interval_msec);
 static void control_greenhouse(void *args);
-void app_main();
 
 /**Global variables**/
 //Data
