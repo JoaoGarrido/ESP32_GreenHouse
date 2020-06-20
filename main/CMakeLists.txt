@@ -8,4 +8,4 @@ set(app_sources "app_main.c"
                 "communications.c"
 )
 
-idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "include" REQUIRES esp_adc_cal mqtt nvs_flash PRIV_REQUIRES dht u8g2 u8g2_esp32_hal)
+idf_component_register(SRCS ${app_sources} INCLUDE_DIRS "include" REQUIRES esp_adc_cal mqtt nvs_flash PRIV_REQUIRES dht u8g2 u8g2_esp32_hal esp32-wifi-manager)

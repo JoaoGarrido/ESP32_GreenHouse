@@ -8,6 +8,7 @@
 #include "esp_system.h"
 /*Project libraries*/
 #include "communications.h"
+#include "wifi_manager.h"
 #include "greenhouse_system.h"
 #include "IO.h"
 #include "display_controller.h"
@@ -118,7 +119,7 @@ void app_main(){
     
     //Init
     init_sync_variables();
-    initialize_wifi_sta_mode();
+	wifi_manager_start();
     init_display( 21, 22);
     initialize_ports();
     init_gui();
