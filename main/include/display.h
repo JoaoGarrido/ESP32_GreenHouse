@@ -1,13 +1,21 @@
 #ifndef DISPLAY
 #define DISPLAY
 
+#define SSD1306 1
+#define LCD16x02 1 
+
 /*System libraries*/
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 /*Project libraries*/
 #include "greenhouse_system.h"
+/*LCD driver libraries*/
+#if SSD1306
 #include "u8g2_esp32_hal.h"
 #include "../u8g2/csrc/u8g2.h"
+#elif LCD16x02
+#include ""
+#endif
 
 /*Definitions*/
 enum All_Menu{

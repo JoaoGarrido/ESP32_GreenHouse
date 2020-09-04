@@ -2,6 +2,7 @@
 #define COMMUNICATIONS
 
 /*System libraries*/
+#include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
 #include "mqtt_client.h"

@@ -979,7 +979,7 @@ CONFIG_WPA_MBEDTLS_CRYPTO=y
 # end of Supplicant
 
 #
-# Application manager
+# Project manager
 #
 CONFIG_USE_DEBUG=0
 CONFIG_No_debug=y
@@ -990,7 +990,7 @@ CONFIG_TEMP_HUMID_SENSOR=0
 CONFIG_DHT_TYPE_DHT11=y
 # CONFIG_DHT_TYPE_AM2301 is not set
 # CONFIG_DHT_TYPE_SI7021 is not set
-# end of Application manager
+# end of Project manager
 # end of Component config
 
 #
