@@ -1,7 +1,7 @@
 #ifndef DISPLAY
 #define DISPLAY
 
-#define SSD1306 1
+#define SSD1306 0
 #define LCD16x02 1 
 
 /*System libraries*/
@@ -14,7 +14,8 @@
 #include "u8g2_esp32_hal.h"
 #include "../u8g2/csrc/u8g2.h"
 #elif LCD16x02
-#include ""
+#include "smbus.h"
+#include "i2c-lcd1602.h"
 #endif
 
 /*Definitions*/

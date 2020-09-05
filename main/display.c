@@ -22,12 +22,15 @@ Main_menu:
 ---Auto
 ---Manual
 **/
-u8g2_t u8g2;
+#if SSD1306
+    u8g2_t u8g2;
+    #define NORTH 2,17
+    #define CENTER 2, 32
+    #define SOUTH 2, 63
+    #define SOUTH_EAST 80, 63
+#elif LCD16x02
 
-#define NORTH 2,17
-#define CENTER 2, 32
-#define SOUTH 2, 63
-#define SOUTH_EAST 80, 63
+#endif
 
 /**Private Functions**/
 
@@ -209,7 +212,23 @@ static void init_SSD1306(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
 }
 
 static void init_LCD16x02(gpio_num_t PIN_SDA, gpio_num_t PIN_SCL){
+    // Set up I2C
+    i2c_master_init();
+    i2c_port_t i2c_num = I2C_MASTER_NUM;
+    uint8_t address = CONFIG_LCD1602_I2C_ADDRESS;
 
+    // Set up the SMBus
+    smbus_info_t * smbus_info = smbus_malloc();
+    ESP_ERROR_CHECK(smbus_init(smbus_info, i2c_num, address));
+    ESP_ERROR_CHECK(smbus_set_timeout(smbus_info, 1000 / portTICK_RATE_MS));
+    
+    // Set up the LCD1602 device with backlight off
+    i2c_lcd1602_info_t * lcd_info = i2c_lcd1602_malloc();
+    ESP_ERROR_CHECK(i2c_lcd1602_init(lcd_info, smbus_info, true,
+                                     LCD_NUM_ROWS, LCD_NUM_COLUMNS, LCD_NUM_VISIBLE_COLUMNS));
+    i2c_lcd1602_set_backlight(lcd_info, false);
+
+    ESP_ERROR_CHECK(i2c_lcd1602_reset(lcd_info));
 } 
 
 /**Public Functions**/

@@ -1,3 +1,12 @@
 [submodule "components/u8g2"]
 	path = components/u8g2
 	url = https://github.com/olikraus/u8g2.git
+[submodule "components/esp32-lcd1602-i2c"]
+	path = components/esp32-lcd1602-i2c
+	url = https://github.com/DavidAntliff/esp32-i2c-lcd1602.git
+[submodule "components/esp32-smbus"]
+	path = components/esp32-smbus
+	url = https://github.com/DavidAntliff/esp32-smbus.git
+[submodule "components/esp32-lcd1602"]
+	path = components/esp32-lcd1602
+	url = https://github.com/DavidAntliff/esp32-i2c-lcd1602.git
