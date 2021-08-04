@@ -8,7 +8,7 @@ extern SemaphoreHandle_t publish_control_signal;
 /**Private variables**/
 //Wifi
 static EventGroupHandle_t wifi_event_group;
-static const int CONNECTED_BIT = BIT0; //Event group
+const int CONNECTED_BIT = BIT0; //Event group
 //Mqtt
 static esp_mqtt_client_handle_t client_g;
 static const char* BROKER_URL = "mqtt://test.mosquitto.org";
@@ -159,17 +159,31 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event){
 
 void initialize_wifi_sta_mode(){
     initialize_nvs();
-    tcpip_adapter_init();
+    //tcpip_adapter_init();
+
     wifi_event_group = xEventGroupCreate();
+    ESP_ERROR_CHECK( esp_netif_init());
+    
     ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL) );
+    
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     cfg.wifi_task_core_id = WIFI_COMMUNICATIONS_CORE;
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = WIFI_SSID,
             .password = WIFI_PASS,
+            /* Setting a password implies station will connect to all security modes including WEP/WPA.
+             * However these modes are deprecated and not advisable to be used. Incase your Access point
+             * doesn't support WPA2, these mode can be enabled by commenting below line */
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+
+            .pmf_cfg = {
+                .capable = true,
+                .required = false
+            },
         },
     };
     //ESP_LOGI(wifi_tag,"Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
@@ -179,14 +193,14 @@ void initialize_wifi_sta_mode(){
 }
 
 void initialize_mqtt_app(){
-    const esp_mqtt_client_config_t mqtt_cfg = {
+    esp_mqtt_client_config_t mqtt_cfg = {
         .uri = BROKER_URL,
         .port = BROKER_PORT,
         .task_prio = 4,
     };
     ESP_LOGI(memory_tag, "[APP] Free memory: %d bytes", esp_get_free_heap_size());
     client_g = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(client_g, ESP_EVENT_ANY_ID, mqtt_event_handler, client_g);
+    esp_mqtt_client_register_event(client_g, (esp_mqtt_event_id_t) ESP_EVENT_ANY_ID, mqtt_event_handler, client_g);
     //xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY); //Waits for the wifi to connect to run the mqtt server
     esp_mqtt_client_start(client_g);
 }
@@ -194,12 +208,12 @@ void initialize_mqtt_app(){
 
 void mqtt_event_handler(void* event_handler_arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
     ESP_LOGD(mqtt_tag, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
-    mqtt_event_handler_callback(event_data);
+    mqtt_event_handler_callback((esp_mqtt_event_handle_t) event_data);
 }
 
 void publish_sensor_data_handler(void *args){
     char buff[21] = "";
-    for(;;){
+    while(1){
         xSemaphoreTake(publish_sensor_signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_dht_handler");
         sprintf(buff, "%f", sensor_data.temperature);
@@ -215,7 +229,7 @@ void publish_sensor_data_handler(void *args){
 
 void publish_control_data_handler(void *args){
     char buff[21] = "";
-    for(;;){
+    while(1){
         xSemaphoreTake(publish_control_signal, portMAX_DELAY);
         ESP_LOGI(mqtt_tag,"Task running: %s", "publish_control_data_handler");
         sprintf(buff, "%d", control_data.mode);

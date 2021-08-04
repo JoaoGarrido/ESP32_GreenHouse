@@ -2,6 +2,7 @@
 #define COMMUNICATIONS
 
 /*System libraries*/
+#include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/semphr.h"
 #include "mqtt_client.h"
@@ -13,8 +14,8 @@
 #include "greenhouse_system.h"
 
 /*Definitions*/
-#define WIFI_SSID ""
-#define WIFI_PASS ""
+#define WIFI_SSID "ABCDEFGI"
+#define WIFI_PASS "12345678"
 
 /**Functions**/
 //Wifi

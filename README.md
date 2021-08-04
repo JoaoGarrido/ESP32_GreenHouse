@@ -23,3 +23,7 @@ Allows local and remote monitorization and control of a small greenhouse
 * [João Garrido](https://github.com/JoaoGarrido)
 * [Emanuel Castro](https://github.com/EmanCastro)
 * [Miguel Macedo](https://github.com/MiguelMMacedo)
+
+# Version
+
+Updated for esp-idf v4.3
