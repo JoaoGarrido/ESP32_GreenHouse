@@ -23,7 +23,8 @@ static const adc_atten_t atten = ADC_ATTEN_DB_0;
 static const dht_sensor_type_t sensor_type = CONFIG_TEMP_HUMID_SENSOR;
 static const gpio_num_t GPIO_DHT = 5;
 //Window
-static const gpio_num_t GPIO_WINDOW = 27;
+static const gpio_num_t GPIO_CLOSE_WINDOW = 27; //PLACEHOLDER
+static const gpio_num_t GPIO_OPEN_WINDOW = 28; //PLACEHOLDER
 //For task time test
 static const gpio_num_t GPIO_TEST = 14;
 
@@ -87,16 +88,27 @@ void initialize_ports(){
         .pull_up_en = 1,
     };
     gpio_config(&dht_config);
-    //Window
-    const uint64_t GPIO_WINDOW_MASK = (1ULL << GPIO_WINDOW);
-    gpio_config_t window_config = {
-        .pin_bit_mask = GPIO_WINDOW_MASK,
+    //Open Window
+    const uint64_t GPIO_OPEN_WINDOW_MASK = (1ULL << GPIO_OPEN_WINDOW);
+    gpio_config_t window_open_config = {
+        .pin_bit_mask = GPIO_OPEN_WINDOW_MASK,
         .intr_type = GPIO_PIN_INTR_DISABLE,
         .mode = GPIO_MODE_INPUT_OUTPUT,
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
-    gpio_config(&window_config);
+    gpio_config(&window_open_config);
+    //Close Window
+    const uint64_t GPIO_CLOSE_WINDOW_MASK = (1ULL << GPIO_CLOSE_WINDOW);
+    gpio_config_t window_close_config = {
+        .pin_bit_mask = GPIO_CLOSE_WINDOW_MASK,
+        .intr_type = GPIO_PIN_INTR_DISABLE,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
+        .pull_down_en = 0,
+        .pull_up_en = 0,
+    };
+    gpio_config(&window_close_config);
+
 
     const uint64_t GPIO_TEST_MASK = (1ULL << GPIO_TEST) | (1ULL << 13) | (1ULL << 12) | (1ULL << 15) | (1ULL << 2) | (1ULL << 4);
     gpio_config_t test_config = {
@@ -208,23 +220,29 @@ void IRAM_ATTR timer_button_isr(void *args){
 
 /*Window*/
 void write_motor_state(void *args){
+    uint32_t window_action = Window_action_Open;
+    sensor_data.window_state = Window_state_Closed;
     for(;;){
-        uint32_t output_level = 3;
-        sensor_data.window_state = gpio_get_level(GPIO_WINDOW);
-        xTaskNotifyWait(0x00, 0xffffffff, &output_level, portMAX_DELAY);
-        DEBUG_GPIO(GPIO_CHANNEL_4,
-            ESP_LOGI(motor_tag,"Task running: %s", "update_motor_status");
-            ets_printf("%d", output_level);
-            if(output_level < 3){            
-                gpio_set_level(GPIO_WINDOW, output_level);
-                //gpio_set_level(GPIO_TEST, 0);
-            }
-            else{
-                ESP_LOGI(motor_tag,"ERROR invalid output level");
-                //gpio_set_level(GPIO_TEST, 0);
-            }
-        )
-    }  
+        xTaskNotifyWait(0x00, 0xffffffff, &window_action, portMAX_DELAY);
+        if(window_action == Window_action_Open){
+            DEBUG_GPIO(GPIO_CHANNEL_4,
+                ESP_LOGI(motor_tag,"Task running: %s", "Open window task");
+                gpio_set_level(GPIO_OPEN_WINDOW, 0);
+                vTaskDelay(OPEN_TIME);
+                gpio_set_level(GPIO_OPEN_WINDOW, 1);
+                sensor_data.window_state = Window_state_Open;
+            )
+        }
+        else if(window_action == Window_action_Close){
+            DEBUG_GPIO(GPIO_CHANNEL_4,
+                ESP_LOGI(motor_tag,"Task running: %s", "Close window task");
+                gpio_set_level(GPIO_CLOSE_WINDOW, 0);
+                vTaskDelay(CLOSE_TIME);
+                gpio_set_level(GPIO_CLOSE_WINDOW, 1);
+                sensor_data.window_state = Window_state_Closed;
+            )
+        }
+    }
 }
 
 void write_stats(void *args) {

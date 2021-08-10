@@ -90,18 +90,18 @@ static void control_greenhouse(void *args){
             //Control Algorithm
             ESP_LOGI(task_logging,"Task running: %s | Mode: %d | Window: %d->%d | Max Temp: %f | Min Temp: %f", "control_greenhouse", control_data.mode, sensor_data.window_state, control_data.window_action, control_data.temperature_max, control_data.temperature_min);
             
+            //Auto mode control motor
             if(control_data.mode == Mode_Auto){
-                if(sensor_data.temperature > control_data.temperature_max){
+                if(sensor_data.temperature > control_data.temperature_max && sensor_data.window_state == Window_state_Closed){
                     control_data.window_action = Window_action_Open;
+                    xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
                 }
-                else if(sensor_data.temperature < control_data.temperature_min){
+                else if(sensor_data.temperature < control_data.temperature_min && sensor_data.window_state == Window_state_Open){
                     control_data.window_action = Window_action_Close;
+                    xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
                 }
             }
-            //Write Motor State
-            if(control_data.window_action != sensor_data.window_state){
-                xTaskNotify(th_write_motor_state, control_data.window_action, eSetValueWithOverwrite);
-            }
+
             //Trigger publish tasks on WiFi Core
             xSemaphoreGive(publish_sensor_signal);
             xSemaphoreGive(publish_control_signal);

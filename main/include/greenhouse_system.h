@@ -13,9 +13,12 @@
 #define TIMER_DIVIDER         16  //  Hardware timer clock divider
 #define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
 
-typedef enum _Buttons{NONE, BTN_SELECT=0, BTN_BACK=1, BTN_UP=2, BTN_DOWN=3} Buttons;
+//Open Time
+#define OPEN_TIME (10000 / portTICK_RATE_MS)
 
-typedef enum _Window_state{Window_state_Open, Window_state_Closed} Window_state;
+//Close Time
+#define CLOSE_TIME (10000 / portTICK_RATE_MS)
+
 typedef struct {
     float humidity;
     float temperature;
@@ -23,13 +26,19 @@ typedef struct {
     int window_state;
 } sensor_data_t;
 
-typedef enum _Window_action{Window_action_Open, Window_action_Close} Window_action;
-typedef enum _Mode{Mode_Auto, Mode_Manual} Mode;
 typedef struct {
     float temperature_max;
     float temperature_min;
     int window_action;
     int mode;
 } control_data_t;
+
+typedef enum _Buttons{NONE, BTN_SELECT=0, BTN_BACK=1, BTN_UP=2, BTN_DOWN=3} Buttons;
+
+typedef enum _Window_state{Window_state_Open = 0, Window_state_Closed = 1} Window_state;
+
+typedef enum _Window_action{Window_action_Open = 0, Window_action_Close = 1} Window_action;
+
+typedef enum _Mode{Mode_Auto, Mode_Manual} Mode;
 
 #endif /* GREENHOUSE_SYSTEM */
